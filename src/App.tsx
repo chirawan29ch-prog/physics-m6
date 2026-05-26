@@ -1733,7 +1733,7 @@ function TeacherAirdrop({students,setPendingAirdrop}){
 // ─────────────────────────────────────────────
 // GOOGLE SHEETS API
 // ─────────────────────────────────────────────
-const GAS_URL = "https://script.google.com/macros/s/AKfycbzcduKP3JZazDiKKRPNDonn2g87M7RWZm4wxG6IXgZ7UqcMTxtCIJC4yWv5WQRxhZhMFg/exec"; // ← ใส่ Web App URL ตรงนี้
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzSILLYJdp-slFsZec0Ozp8WKJZFYc0BqyJ6-pZnontW0gl7IrgbedJA52B08keK0Lnyw/exec"; // ← ใส่ Web App URL ตรงนี้
 
 async function gasGet(){
   try{
