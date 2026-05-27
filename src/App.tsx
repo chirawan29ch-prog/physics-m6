@@ -66,9 +66,10 @@ select.input option{background:#152236}
 // CONSTANTS
 // ─────────────────────────────────────────────
 const CHAPTERS = [
-  {id:"CH1",label:"บทที่ 1",title:"ไฟฟ้าและแม่เหล็ก",icon:"⚡",color:"#3db8a0",bg:"rgba(61,184,160,.06)"},
-  {id:"CH2",label:"บทที่ 2",title:"ความร้อนและแก๊ส",icon:"🔥",color:"#e07b3a",bg:"rgba(224,123,58,.06)"},
-  {id:"CH3",label:"บทที่ 3",title:"ของแข็งและของไหล",icon:"💧",color:"#9b7fe8",bg:"rgba(155,127,232,.06)"},
+  {id:"CH1",label:"บทที่ 1",title:"การเคลื่อนที่แบบฮาร์มอนิกอย่างง่าย",icon:"🔄",color:"#3db8a0",bg:"rgba(61,184,160,.06)"},
+  {id:"CH2",label:"บทที่ 2",title:"คลื่น",icon:"🌊",color:"#e07b3a",bg:"rgba(224,123,58,.06)"},
+  {id:"CH3",label:"บทที่ 3",title:"แสงเชิงคลื่น",icon:"✨",color:"#9b7fe8",bg:"rgba(155,127,232,.06)"},
+  {id:"CH4",label:"บทที่ 4",title:"แสงเชิงรังสี",icon:"☀️",color:"#f0c060",bg:"rgba(240,192,96,.06)"},
 ];
 
 // ← เกรดแบบ 0/1/1.5/2/2.5/3/3.5/4
@@ -107,24 +108,34 @@ function getRank(xp){return XP_RANKS.find(r=>xp>=r.minXP)||XP_RANKS[XP_RANKS.len
 // MOCK DATA
 // ─────────────────────────────────────────────
 const INIT_ASSIGNMENTS = [
-  {id:"A1",chapterId:"CH1",title:"ใบกิจกรรม 1.1: กฎของโอห์ม",xp:300,due:"30 พ.ค. 2568",desc:"คำนวณแรงดัน กระแส ความต้านทาน",type:"worksheet"},
-  {id:"A2",chapterId:"CH1",title:"แบบทดสอบ 1.2: วงจรซีรีส์-ขนาน",xp:400,due:"5 มิ.ย. 2568",desc:"30 ข้อ multiple choice",type:"quiz"},
-  {id:"A3",chapterId:"CH1",title:"Lab 1.3: แม่เหล็กไฟฟ้า",xp:350,due:"12 มิ.ย. 2568",desc:"ทดลองสนามแม่เหล็ก",type:"lab"},
-  {id:"A4",chapterId:"CH2",title:"ใบกิจกรรม 2.1: กฎของแก๊ส",xp:300,due:"18 มิ.ย. 2568",desc:"Boyle's & Charles' Law",type:"worksheet"},
-  {id:"A5",chapterId:"CH2",title:"แบบทดสอบ 2.2: อุณหพลศาสตร์",xp:400,due:"24 มิ.ย. 2568",desc:"30 ข้อ multiple choice",type:"quiz"},
-  {id:"A6",chapterId:"CH3",title:"ใบกิจกรรม 3.1: แรงลอยตัว",xp:350,due:"30 มิ.ย. 2568",desc:"หลักของอาร์คิมิดีส",type:"worksheet"},
-  {id:"A7",chapterId:"CH3",title:"Lab 3.2: ของไหลและความดัน",xp:400,due:"5 ก.ค. 2568",desc:"Pascal & Bernoulli",type:"lab"},
+  {id:"A1",chapterId:"CH1",title:"ใบกิจกรรม 1.1: การเคลื่อนที่แบบ SHM",xp:300,due:"30 พ.ค. 2568",desc:"คำนวณคาบและความถี่",type:"worksheet",createdAt:"20 พ.ค. 2568"},
+  {id:"A2",chapterId:"CH1",title:"แบบทดสอบ 1.2: พลังงานใน SHM",xp:400,due:"5 มิ.ย. 2568",desc:"30 ข้อ multiple choice",type:"quiz",createdAt:"20 พ.ค. 2568"},
+  {id:"A3",chapterId:"CH2",title:"ใบกิจกรรม 2.1: สมบัติของคลื่น",xp:300,due:"12 มิ.ย. 2568",desc:"การสะท้อน หักเห เลี้ยวเบน",type:"worksheet",createdAt:"21 พ.ค. 2568"},
+  {id:"A4",chapterId:"CH2",title:"แบบทดสอบ 2.2: คลื่นเสียง",xp:400,due:"18 มิ.ย. 2568",desc:"30 ข้อ multiple choice",type:"quiz",createdAt:"21 พ.ค. 2568"},
+  {id:"A5",chapterId:"CH3",title:"ใบกิจกรรม 3.1: การแทรกสอดของแสง",xp:350,due:"24 มิ.ย. 2568",desc:"Young's double slit",type:"worksheet",createdAt:"22 พ.ค. 2568"},
+  {id:"A6",chapterId:"CH3",title:"Lab 3.2: การเลี้ยวเบนของแสง",xp:400,due:"30 มิ.ย. 2568",desc:"ทดลองกับ diffraction grating",type:"lab",createdAt:"22 พ.ค. 2568"},
+  {id:"A7",chapterId:"CH4",title:"ใบกิจกรรม 4.1: กฎของสเนลล์",xp:300,due:"5 ก.ค. 2568",desc:"การหักเหของแสง",type:"worksheet",createdAt:"23 พ.ค. 2568"},
+  {id:"A8",chapterId:"CH4",title:"แบบทดสอบ 4.2: เลนส์และกระจก",xp:400,due:"10 ก.ค. 2568",desc:"30 ข้อ multiple choice",type:"quiz",createdAt:"23 พ.ค. 2568"},
 ];
 const INIT_RESOURCES = [];
 const INIT_STUDENTS = [
-  {id:"s1", name:"นาย ศิวรัตน์ ปัทมผดุงศักดิ์", password:"18677", avatar:"👨‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
-  {id:"s2", name:"นางสาว สุธาสินี แสงปลาย",      password:"18583", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
-  {id:"s3", name:"นางสาว พิมพ์ชนก กลิ่นระรื่น",  password:"18607", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
-  {id:"s4", name:"นางสาว วรินรำไพ ทินภา",         password:"18608", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
-  {id:"s5", name:"นางสาว วริศรา อุ่นใจ",          password:"18609", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
-  {id:"s6", name:"นางสาว อริสา กานยะคามิน",       password:"18613", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
-  {id:"s7", name:"นางสาว คันธารัตน์ ยอดหล้า",     password:"18646", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
-  {id:"s8", name:"นางสาว สุดที่รัก รู้เจน",       password:"18804", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s1",  name:"นาย พรเทพ ฉิมสวัสดิ์",       password:"18721", avatar:"👨‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s2",  name:"นาย ศรัณย์ อินทร์ศรี",        password:"18728", avatar:"👨‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s3",  name:"นาย ภาวสุทธิ์ สุกรี",         password:"19129", avatar:"👨‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s4",  name:"นาย รัฐฐกรณ์ ชมชิด",          password:"19144", avatar:"👨‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s5",  name:"นางสาว จันทร์ศุธา โพธิ์ล่าม", password:"18738", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s6",  name:"นางสาว อริสรา พรายยงค์",      password:"18751", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s7",  name:"นางสาว ชุตินันท์ ดุสิต",      password:"19130", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s8",  name:"นางสาว ณัฐนิชา บุญวัดโพธิ์",  password:"19205", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s9",  name:"นาย ศิวกร บุญภา",             password:"18795", avatar:"👨‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s10", name:"นางสาว มณีนุช อาสาเสนีย์",    password:"18745", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s11", name:"นางสาว บุญรักษา คำพล",        password:"18740", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s12", name:"นางสาว ศิริพร ปันท่าเรือ",    password:"18747", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s13", name:"นางสาว สิริธร บัวสำเริง",     password:"18749", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s14", name:"นางสาว ผลิตา ศรีกุตา",        password:"19219", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s15", name:"นางสาว อัญชลี เกิดอำแพง",     password:"18797", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s16", name:"นางสาว ขวัญพิชชา สำรวมจิต",   password:"19124", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
+  {id:"s17", name:"นางสาว พิชชานันท์ แก้วบุบผา", password:"19126", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null},
 ];
 
 // ─────────────────────────────────────────────
