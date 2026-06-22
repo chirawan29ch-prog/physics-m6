@@ -2511,7 +2511,7 @@ function TeacherGrades({students,setStudents}){
               <thead>
                 <tr style={{borderBottom:"1px solid var(--border)"}}>
                   {[{h:"ชื่อ",a:"left"},{h:"เก็บก่อนกลาง /35",a:"center"},{h:"กลางภาค /15",a:"center"},{h:"เก็บหลังกลาง /35",a:"center"},{h:"ปลายภาค /15",a:"center"},{h:"รวม/100",a:"center"},{h:"เกรด",a:"center"}].map(({h,a},i)=>(
-                    <th key={i} style={{padding:"8px 10px",textAlign:a as any,fontSize:11,color:"var(--muted)",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{h}</th>
+                    <th key={i} style={{padding:"8px 12px",textAlign:a as any,fontSize:11,color:"var(--muted)",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -2520,8 +2520,10 @@ function TeacherGrades({students,setStudents}){
                   const s1=getS1(s),s2=getS2(s),total=getTotal(s),grade=getGrade(total);
                   return(
                     <tr key={s.id} style={{borderBottom:"1px solid var(--border)"}}>
-                      <td style={{padding:"10px",fontSize:13}}>
-                        <span style={{fontSize:20,marginRight:8}}>{s.avatar}</span>{s.name}
+                      <td style={{padding:"10px 12px",fontSize:13,textAlign:"left"}}>
+                        <span style={{display:"inline-flex",alignItems:"center",gap:8,whiteSpace:"nowrap"}}>
+                          <span style={{fontSize:20}}>{s.avatar}</span><span>{s.name}</span>
+                        </span>
                       </td>
                       <td style={{textAlign:"center",padding:"10px 8px"}}>
                         <span className="mono" style={{fontSize:15,fontWeight:700,color:"#185FA5"}}>{s1}</span>
