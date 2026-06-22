@@ -597,7 +597,7 @@ function LoginScreen({students,onLogin}){
 // ─────────────────────────────────────────────
 function TopNav({user,role,page,setPage,onLogout}){
   const sTabs=[{id:"dashboard",label:"DASHBOARD"},{id:"resources",label:"เนื้อหา"},{id:"assignments",label:"ส่งงาน"},{id:"ranking",label:"TOP 3"},{id:"inventory",label:"AIRDROP"},{id:"settings",label:"ตั้งค่า"}];
-  const tTabs=[{id:"overview",label:"OVERVIEW"},{id:"students",label:"STUDENTS"},{id:"t-assignments",label:"📋 งาน"},{id:"t-resources",label:"📁 ไฟล์"},{id:"t-scores",label:"⭐ XP"},{id:"t-exam",label:"📝 สอบ"},{id:"t-airdrop",label:"📦 AIRDROP"},{id:"ranking",label:"RANKING"}];
+  const tTabs=[{id:"overview",label:"OVERVIEW"},{id:"students",label:"STUDENTS"},{id:"t-assignments",label:"📋 งาน"},{id:"t-resources",label:"📁 ไฟล์"},{id:"t-scores",label:"⭐ XP"},{id:"t-exam",label:"📝 สอบ"},{id:"t-grades",label:"📊 คะแนน"},{id:"t-airdrop",label:"📦 AIRDROP"},{id:"ranking",label:"RANKING"}];
   const tabs=role==="teacher"?tTabs:sTabs;
   return(
     <div style={{position:"sticky",top:0,zIndex:100,background:"rgba(12,24,42,.96)",backdropFilter:"blur(20px)",borderBottom:"1px solid var(--border)"}}>
@@ -643,6 +643,7 @@ const PAGE_META = {
   "t-resources":  {label:"จัดการไฟล์",    back:"overview"},
   "t-scores":     {label:"จัดการ XP",     back:"overview"},
   "t-exam":       {label:"คะแนนสอบ",      back:"overview"},
+  "t-grades":     {label:"สรุปคะแนนรวม",  back:"overview"},
   "t-airdrop":    {label:"AIRDROP",       back:"overview"},
 };
 
@@ -841,7 +842,7 @@ function StudentDashboard({student,students,assignments,setPage,setStudents}){
 // ─────────────────────────────────────────────
 // STUDENT: ASSIGNMENTS
 // ─────────────────────────────────────────────
-function StudentAssignments({student,assignments,setStudents}){
+function StudentAssignments({student,students,assignments,setStudents}){
   const [uploadModal,setUploadModal]=useState(null);
   const [driveLink,setDriveLink]=useState("");
   function openUpload(a){setUploadModal(a);setDriveLink("");}
@@ -890,8 +891,9 @@ function StudentAssignments({student,assignments,setStudents}){
       <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:20}}>MISSION BOARD — {assignments.length} OBJECTIVES</div>
       {CHAPTERS.map(ch=>{
         const chA=assignments.filter(a=>a.chapterId===ch.id);
-        const chLogs=(student.xpLog||[]).filter((l:any)=>l.chapterId===ch.id);
-        if(!chA.length&&!chLogs.length)return null;
+        const chLogs=(student.xpLog||[]).filter((l:any)=>(l.chapterId||'CH1')===ch.id);
+        const allChActNames=[...new Set((students||[]).flatMap((st:any)=>(st.xpLog||[]).filter((l:any)=>(l.chapterId||"CH1")===ch.id).map((l:any)=>l.activity)))];
+        if(!chA.length&&!chLogs.length&&allChActNames.length===0)return null;
         return(
           <div key={ch.id} style={{marginBottom:32}}>
             {/* ── Chapter Header ── */}
@@ -946,49 +948,54 @@ function StudentAssignments({student,assignments,setStudents}){
             )}
 
             {/* ── กิจกรรมในห้องเรียน ── */}
-            {chLogs.length>0&&(
-              <div style={{marginBottom:8}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,paddingLeft:4}}>
-                  <span style={{fontSize:16}}>🏫</span>
-                  <div className="mono" style={{fontSize:10,color:"#aa8ff0",letterSpacing:2,fontWeight:700}}>กิจกรรมในห้องเรียน</div>
-                  <span className="badge" style={{background:"rgba(170,143,240,.2)",border:"1px solid rgba(170,143,240,.4)",color:"#aa8ff0",fontSize:9}}>{chLogs.length} กิจกรรม</span>
-                </div>
-                {[...chLogs].reverse().map((log:any,i:number)=>(
-                  <div key={i} className="card" style={{display:"flex",alignItems:"center",gap:14,marginBottom:8,marginLeft:16,borderColor:"rgba(170,143,240,.3)"}}>
-                    <div style={{fontSize:22}}>⭐</div>
-                    <div style={{flex:1}}>
-                      <span className="badge" style={{background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.4)",color:"var(--green)",marginBottom:4,display:"inline-block"}}>✓ ได้รับแล้ว</span>
-                      <div style={{fontSize:13,fontWeight:600,color:"#fff",marginTop:4}}>{log.activity}</div>
-                      <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{log.date}</div>
-                    </div>
-                    <div className="mono" style={{fontSize:16,fontWeight:700,color:"var(--gold)"}}>+{log.xp} XP</div>
+            {(()=>{
+              const allChActNames=[...new Set(
+                (students||[]).flatMap((st:any)=>(st.xpLog||[])
+                  .filter((l:any)=>(l.chapterId||"CH1")===ch.id)
+                  .map((l:any)=>l.activity))
+              )];
+              if(allChActNames.length===0&&chLogs.length===0)return null;
+              const allActs=[...new Set([...allChActNames,...chLogs.map((l:any)=>l.activity)])];
+              if(allActs.length===0)return null;
+              return(
+                <div style={{marginBottom:8}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,paddingLeft:4}}>
+                    <span style={{fontSize:16}}>🏫</span>
+                    <div className="mono" style={{fontSize:10,color:"#aa8ff0",letterSpacing:2,fontWeight:700}}>กิจกรรมในห้องเรียน</div>
+                    <span className="badge" style={{background:"rgba(170,143,240,.2)",border:"1px solid rgba(170,143,240,.4)",color:"#aa8ff0",fontSize:9}}>{allActs.length} กิจกรรม</span>
                   </div>
-                ))}
-              </div>
-            )}
+                  {allActs.map((actName:any,i:number)=>{
+                    const myLog=chLogs.find((l:any)=>l.activity===actName);
+                    return(
+                      <div key={i} className="card" style={{display:"flex",alignItems:"center",gap:14,marginBottom:8,marginLeft:16,
+                        borderColor:myLog?"rgba(170,143,240,.3)":"rgba(232,96,96,.25)",
+                        background:myLog?"var(--bg2)":"rgba(232,96,96,.04)"}}>
+                        <div style={{fontSize:22}}>{myLog?"⭐":"⏳"}</div>
+                        <div style={{flex:1}}>
+                          {myLog
+                            ?<span className="badge" style={{background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.4)",color:"var(--green)",marginBottom:4,display:"inline-block"}}>✓ ได้รับแล้ว</span>
+                            :<span className="badge" style={{background:"rgba(232,96,96,.1)",border:"1px solid rgba(232,96,96,.3)",color:"var(--red)",marginBottom:4,display:"inline-block"}}>⏳ ค้างส่ง</span>
+                          }
+                          <div style={{fontSize:13,fontWeight:600,color:myLog?"#fff":"#f5b8b8",marginTop:3}}>{actName}</div>
+                          {myLog
+                            ?<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{myLog.date}</div>
+                            :<div style={{fontSize:11,color:"var(--red)",marginTop:2}}>กรุณาติดต่อส่งงานกับครู</div>
+                          }
+                        </div>
+                        {myLog
+                          ?<div className="mono" style={{fontSize:16,fontWeight:700,color:"var(--gold)"}}>+{myLog.xp} XP</div>
+                          :<div className="mono" style={{fontSize:14,color:"var(--muted)"}}>— XP</div>
+                        }
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         );
       })}
-      {/* กิจกรรมที่ไม่ได้ระบุบท (legacy) */}
-      {(student.xpLog||[]).filter((l:any)=>!l.chapterId).length>0&&(
-        <div style={{marginBottom:28}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-            <span style={{fontSize:16}}>🏫</span>
-            <div className="mono" style={{fontSize:10,color:"#aa8ff0",letterSpacing:2,fontWeight:700}}>กิจกรรมอื่นๆ</div>
-          </div>
-          {[...(student.xpLog||[])].filter((l:any)=>!l.chapterId).reverse().map((log:any,i:number)=>(
-            <div key={i} className="card" style={{display:"flex",alignItems:"center",gap:14,marginBottom:8,borderColor:"rgba(170,143,240,.3)"}}>
-              <div style={{fontSize:22}}>⭐</div>
-              <div style={{flex:1}}>
-                <span className="badge" style={{background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.4)",color:"var(--green)",marginBottom:4,display:"inline-block"}}>✓ ได้รับแล้ว</span>
-                <div style={{fontSize:13,fontWeight:600,color:"#fff",marginTop:4}}>{log.activity}</div>
-                <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{log.date}</div>
-              </div>
-              <div className="mono" style={{fontSize:16,fontWeight:700,color:"var(--gold)"}}>+{log.xp} XP</div>
-            </div>
-          ))}
-        </div>
-      )}
+{/* กิจกรรมเก่าที่ไม่มี chapterId ถูก default ไป CH1 แล้ว ไม่ต้องแสดง section นี้อีก */}
       {/* ── XP รวมทั้งหมด ── */}
       {(()=>{
         const xpFromSubs=Object.values(student.submissions||{}).reduce((s:number,sub:any)=>s+(sub?.graded?sub.xpEarned||0:0),0);
@@ -1380,6 +1387,61 @@ function TeacherStudents({students,assignments,setStudents}){
             </>:<span className="badge" style={{background:"rgba(232,96,96,.1)",border:"1px solid rgba(232,96,96,.25)",color:"var(--red)"}}>⏳ ยังไม่ส่ง</span>}
           </div>
         );})}</div>
+      {/* คะแนนรายส่วน */}
+      {(()=>{
+        const HALF_XP=1250;
+        const xpFirst=Math.min(s.xp,HALF_XP);
+        const xpSecond=Math.max(0,s.xp-HALF_XP);
+        const sc1=Math.min(35,Math.round(xpFirst/25));
+        const sc2=Math.min(35,Math.round(xpSecond/25));
+        const sections=[
+          {label:"เก็บก่อนกลางภาค",color:"#185FA5",score:sc1,max:35},
+          {label:"สอบกลางภาค",color:"#5DCAA5",score:s.midterm??null,max:15,editable:true},
+          {label:"เก็บหลังกลางภาค",color:"#f472b6",score:sc2,max:35},
+          {label:"สอบปลายภาค",color:"#e88c4a",score:s.final??null,max:15,editable:true},
+        ];
+        return(
+          <div className="card" style={{marginBottom:16}}>
+            <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,marginBottom:16}}>📊 คะแนนรายส่วน</div>
+            {sections.map((sec,i)=>{
+              const pct=sec.score!==null?Math.round(sec.score/sec.max*100):null;
+              return(
+                <div key={i} style={{marginBottom:16}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <div style={{fontSize:13,color:"var(--muted2)",display:"flex",alignItems:"center",gap:8}}>
+                      <span style={{width:10,height:10,borderRadius:2,background:sec.color,display:"inline-block"}}></span>
+                      {sec.label}
+                    </div>
+                    <div className="mono" style={{fontSize:13,color:sec.color}}>
+                      {sec.score!==null
+                        ?<><span style={{fontSize:18,fontWeight:700}}>{pct}%</span><span style={{color:"var(--muted)",fontSize:11}}> ({sec.score}/{sec.max})</span></>
+                        :<span style={{color:"var(--muted)",fontSize:11}}>รอกรอก</span>}
+                    </div>
+                  </div>
+                  <div style={{height:18,borderRadius:9,overflow:"hidden",background:"rgba(14,26,43,.6)",border:"1px solid rgba(212,168,67,.15)"}}>
+                    {sec.score!==null&&<div style={{height:"100%",borderRadius:9,background:sec.color,width:`${pct}%`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff",fontFamily:"'Share Tech Mono',monospace"}}>
+                      {(pct||0)>10?`${pct}%`:""}
+                    </div>}
+                  </div>
+                </div>
+              );
+            })}
+            {(()=>{
+              const total=(s.midterm!==null&&s.final!==null)?sc1+(s.midterm||0)+sc2+(s.final||0):null;
+              const grade=total===null?null:total>=80?"4.0":total>=75?"3.5":total>=70?"3.0":total>=65?"2.5":total>=60?"2.0":total>=55?"1.5":total>=50?"1.0":"0";
+              return total!==null?(
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(232,188,85,.08)",border:"1px solid rgba(232,188,85,.3)",borderRadius:8,marginTop:4}}>
+                  <span style={{fontSize:13,color:"var(--muted2)"}}>รวมทั้งหมด</span>
+                  <div style={{display:"flex",alignItems:"center",gap:16}}>
+                    <span className="mono" style={{fontSize:20,fontWeight:700,color:"var(--gold)"}}>{total}/100</span>
+                    <span className="cond" style={{fontSize:28,fontWeight:900,color:parseFloat(grade||"0")>=3.5?"var(--cyan)":parseFloat(grade||"0")>=2.5?"var(--gold)":parseFloat(grade||"0")>=1.5?"var(--orange)":"var(--red)"}}>{grade}</span>
+                  </div>
+                </div>
+              ):null;
+            })()}
+          </div>
+        );
+      })()}
       {s.inventory&&s.inventory.length>0&&(
         <div className="card" style={{borderColor:"rgba(170,143,240,.35)"}}>
           <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,marginBottom:14}}>📦 AIRDROP INVENTORY ({s.inventory.length} ชิ้น)</div>
@@ -1677,8 +1739,23 @@ function TeacherScores({students,setStudents}){
   const [activityName,setActivityName]=useState("");
   const [selChapter,setSelChapter]=useState("CH1");
   const [msg,setMsg]=useState(null);
+  const [editAct,setEditAct]=useState<any>(null); // {oldName, newName, newChapterId}
 
   function toast(t,isErr=false){setMsg({text:t,err:isErr});setTimeout(()=>setMsg(null),3500);}
+
+  function saveEditActivity(){
+    if(!editAct)return;
+    const{oldName,newName,newChapterId}=editAct;
+    if(!newName.trim()){toast("กรุณาใส่ชื่อกิจกรรม",true);return;}
+    setStudents(prev=>prev.map(s=>({
+      ...s,
+      xpLog:(s.xpLog||[]).map((log:any)=>log.activity===oldName
+        ?{...log,activity:newName.trim(),chapterId:newChapterId}
+        :log)
+    })));
+    toast(`✅ แก้ไข "${oldName}" → "${newName}" สำเร็จ!`);
+    setEditAct(null);
+  }
 
   function toggleMulti(id){
     setSelMulti(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
@@ -1710,7 +1787,7 @@ function TeacherScores({students,setStudents}){
     const map={};
     students.forEach(s=>{
       (s.xpLog||[]).forEach(log=>{
-        if(!map[log.activity])map[log.activity]={name:log.activity,entries:{}};
+        if(!map[log.activity])map[log.activity]={name:log.activity,chapterId:log.chapterId||"CH1",entries:{}};
         map[log.activity].entries[s.id]={xp:log.xp,date:log.date};
       });
     });
@@ -1857,6 +1934,29 @@ function TeacherScores({students,setStudents}){
         </>
       )}
 
+      {editAct&&(
+        <div className="overlay">
+          <div className="card card-gold" style={{width:"100%",maxWidth:480}}>
+            <div className="cond" style={{fontSize:22,color:"var(--gold)",letterSpacing:2,marginBottom:20}}>✏️ แก้ไขกิจกรรม</div>
+            <div style={{marginBottom:14}}>
+              <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>บทเรียน</label>
+              <select className="input" value={editAct.newChapterId} onChange={e=>setEditAct({...editAct,newChapterId:e.target.value})}>
+                {CHAPTERS.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label} {c.title}</option>)}
+              </select>
+            </div>
+            <div style={{marginBottom:20}}>
+              <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>ชื่อกิจกรรม</label>
+              <input className="input" value={editAct.newName} onChange={e=>setEditAct({...editAct,newName:e.target.value})}
+                placeholder="ชื่อกิจกรรม"/>
+              <div style={{fontSize:11,color:"var(--muted)",marginTop:6}}>จะแก้ไขกิจกรรมชื่อนี้ในทุกนักเรียนที่ได้รับ</div>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button className="btn btn-gold" onClick={saveEditActivity} style={{flex:1,fontSize:15,padding:12}}>💾 บันทึก</button>
+              <button className="btn-outline" onClick={()=>setEditAct(null)} style={{flex:1}}>ยกเลิก</button>
+            </div>
+          </div>
+        </div>
+      )}
       {tab==="summary"&&(
         <div>
           {allActivities.length===0?(
@@ -1872,14 +1972,16 @@ function TeacherScores({students,setStudents}){
               return(
                 <div key={ai} className="card" style={{marginBottom:16,borderColor:"rgba(232,188,85,.35)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14,flexWrap:"wrap",gap:8}}>
-                    <div>
+                    <div style={{flex:1}}>
                       <div className="cond" style={{fontSize:20,fontWeight:700,color:"var(--gold2)"}}>{act.name}</div>
-                      <div style={{display:"flex",gap:8,marginTop:6}}>
+                      <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap"}}>
                         <span className="badge" style={{background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.4)",color:"var(--green)"}}>✓ ได้รับ {receivedCount} คน</span>
                         <span className="badge" style={{background:"rgba(232,96,96,.1)",border:"1px solid rgba(232,96,96,.28)",color:"var(--red)"}}>— ยังไม่ได้ {students.length-receivedCount} คน</span>
                         <span className="mono" style={{fontSize:11,color:"var(--gold)",padding:"3px 8px"}}>รวม {totalGiven.toLocaleString()} XP</span>
                       </div>
                     </div>
+                    <button className="btn-ghost" onClick={()=>setEditAct({oldName:act.name,newName:act.name,newChapterId:act.chapterId||"CH1"})}
+                      style={{fontSize:12,padding:"6px 14px",flexShrink:0}}>✏️ แก้ไข</button>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
                     {sortedStudents.map(s=>{
@@ -1912,6 +2014,387 @@ function TeacherScores({students,setStudents}){
 // ─────────────────────────────────────────────
 // TEACHER: AIRDROP
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// TEACHER: GRADES SUMMARY + PRE/POST TEST
+// ─────────────────────────────────────────────
+function TeacherGrades({students,setStudents}){
+  const HALF_XP=1250;
+  const [tabG,setTabG]=useState("score");
+  const [maxPP,setMaxPP]=useState(20);
+  const [ppScores,setPpScores]=useState<any>(()=>{
+    const m:any={};students.forEach((s:any)=>{m[s.id]={pre:null,post:null};});return m;
+  });
+  const [saved,setSaved]=useState(false);
+  const [editMid,setEditMid]=useState<any>(()=>{
+    const m:any={};students.forEach((s:any)=>{m[s.id]=s.midterm!==null&&s.midterm!==undefined?String(s.midterm):"";});return m;
+  });
+  const [editFinal,setEditFinal]=useState<any>(()=>{
+    const m:any={};students.forEach((s:any)=>{m[s.id]=s.final!==null&&s.final!==undefined?String(s.final):"";});return m;
+  });
+
+  function xpToScore(xp:number,max:number){return Math.min(max,Math.round(xp/25));}
+  function getS1(s:any){return xpToScore(Math.min(s.xp,HALF_XP),35);}
+  function getS2(s:any){return xpToScore(Math.max(0,s.xp-HALF_XP),35);}
+  function getTotal(s:any){
+    if(s.midterm===null||s.midterm===undefined||s.final===null||s.final===undefined)return null;
+    return getS1(s)+(s.midterm||0)+getS2(s)+(s.final||0);
+  }
+  function getGrade(total:number|null){
+    if(total===null)return null;
+    if(total>=80)return"4.0";if(total>=75)return"3.5";if(total>=70)return"3.0";
+    if(total>=65)return"2.5";if(total>=60)return"2.0";if(total>=55)return"1.5";
+    if(total>=50)return"1.0";return"0";
+  }
+  function gradeColor(g:string|null){
+    if(!g)return"var(--muted)";
+    const n=parseFloat(g);
+    if(n>=3.5)return"var(--cyan)";if(n>=2.5)return"var(--gold)";if(n>=1.5)return"var(--orange)";return"var(--red)";
+  }
+  function getPPGroup(score:number){
+    const p=score/maxPP;
+    if(p>=2/3)return{key:"g",bg:"#22c55e"};
+    if(p>=1/3)return{key:"m",bg:"#eab308"};
+    return{key:"w",bg:"#ef4444"};
+  }
+  function saveAll(){
+    setStudents((prev:any)=>prev.map((s:any)=>({
+      ...s,
+      midterm:editMid[s.id]!==""?Number(editMid[s.id]):null,
+      final:editFinal[s.id]!==""?Number(editFinal[s.id]):null,
+    })));
+    setSaved(true);setTimeout(()=>setSaved(false),3000);
+  }
+
+  const sorted=[...students].sort((a:any,b:any)=>(getTotal(b)??-1)-(getTotal(a)??-1));
+  const withGrades=students.filter((s:any)=>getTotal(s)!==null);
+  const passing=withGrades.filter((s:any)=>parseFloat(getGrade(getTotal(s))||"0")>0).length;
+  const avg=withGrades.length>0?Math.round(withGrades.reduce((a:number,s:any)=>a+(getTotal(s)||0),0)/withGrades.length):null;
+  const gradeCounts:any={"4.0":0,"3.5":0,"3.0":0,"2.5":0,"2.0":0,"1.5":0,"1.0":0,"0":0};
+  students.forEach((s:any)=>{const g=getGrade(getTotal(s));if(g)gradeCounts[g]++;});
+
+  useEffect(()=>{
+    if(typeof Chart==="undefined")return;
+    ["gradeDistChart","scoreBreakChart","ppGroupBar"].forEach(id=>{
+      const c=document.getElementById(id) as HTMLCanvasElement;
+      if(c&&(c as any)._ci){(c as any)._ci.destroy();(c as any)._ci=null;}
+    });
+    if(tabG==="score"){
+      Chart.defaults.color="#9aacbf";
+      const gc=document.getElementById("gradeDistChart") as HTMLCanvasElement;
+      if(gc){
+        const gLabels=Object.keys(gradeCounts);
+        const gColors=gLabels.map(g=>{const n=parseFloat(g);return n>=3.5?"#4ecaae":n>=2.5?"#f5cc70":n>=1.5?"#e88c4a":"#e86060";});
+        (gc as any)._ci=new Chart(gc,{
+          type:"doughnut",
+          data:{labels:gLabels,datasets:[{data:Object.values(gradeCounts),backgroundColor:gColors,borderWidth:3,borderColor:"rgba(15,30,53,.9)"}]},
+          options:{responsive:true,maintainAspectRatio:false,
+            plugins:{
+              legend:{display:true,position:"bottom" as const,labels:{color:"#9aacbf",font:{size:10},padding:8,boxWidth:10}},
+              tooltip:{callbacks:{label:(c:any)=>c.label+": "+c.raw+" คน ("+(Math.round(c.raw/students.length*100))+"%)"}},
+              datalabels:{color:"#fff",font:{weight:"bold" as const,size:11},
+                formatter:(val:any)=>val>0?(val+" คน "+(Math.round(val/students.length*100))+"%"):"" ,
+                display:(ctx:any)=>ctx.dataset.data[ctx.dataIndex]>0}
+            }
+          }
+        });
+      }
+      const sc=document.getElementById("scoreBreakChart") as HTMLCanvasElement;
+      if(sc){
+        const top8=sorted.slice(0,8);
+        (sc as any)._ci=new Chart(sc,{
+          type:"bar",
+          data:{
+            labels:top8.map((s:any)=>s.name.split(" ").slice(-1)[0]),
+            datasets:[
+              {label:"เก็บก่อนกลาง",data:top8.map((s:any)=>getS1(s)),backgroundColor:"#185FA5",borderRadius:2,stack:"a"},
+              {label:"กลางภาค",data:top8.map((s:any)=>s.midterm||0),backgroundColor:"#5DCAA5",borderRadius:2,stack:"a"},
+              {label:"เก็บหลังกลาง",data:top8.map((s:any)=>getS2(s)),backgroundColor:"#f472b6",borderRadius:2,stack:"a"},
+              {label:"ปลายภาค",data:top8.map((s:any)=>s.final||0),backgroundColor:"#e88c4a",borderRadius:2,stack:"a"},
+            ]
+          },
+          options:{responsive:true,maintainAspectRatio:false,
+            plugins:{legend:{display:false},datalabels:{display:false}},
+            scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,max:100,grid:{color:"rgba(232,188,85,.08)"}}}}
+        });
+      }
+    }
+    if(tabG==="prepost"){
+      Chart.defaults.color="#555";
+      const gc=document.getElementById("ppGroupBar") as HTMLCanvasElement;
+      if(!gc)return;
+      const keys=["g","m","w"];
+      const pc=[0,0,0],qc=[0,0,0];
+      students.forEach((st:any)=>{
+        const pp=ppScores[st.id]||{};
+        if(pp.pre!==null&&pp.pre!==undefined)pc[keys.indexOf(getPPGroup(pp.pre).key)]++;
+        if(pp.post!==null&&pp.post!==undefined)qc[keys.indexOf(getPPGroup(pp.post).key)]++;
+      });
+      (gc as any)._ci=new Chart(gc,{
+        type:"bar",
+        data:{labels:["เก่ง","กลาง","อ่อน"],datasets:[
+          {label:"Pre-test",data:pc,backgroundColor:"#7c3aed",borderRadius:4},
+          {label:"Post-test",data:qc,backgroundColor:"#0ea5e9",borderRadius:4},
+        ]},
+        options:{responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:true,labels:{color:"#555",font:{size:11}}},datalabels:{display:false}},
+          scales:{x:{grid:{display:false},ticks:{color:"#555"}},y:{beginAtZero:true,ticks:{stepSize:1,color:"#555"},max:students.length,grid:{color:"rgba(0,0,0,.06)"}}},
+          animation:{onComplete:function(e:any){
+            const ctx=e.chart.ctx;
+            ctx.font="bold 13px 'Share Tech Mono',monospace";
+            ctx.fillStyle="#333";ctx.textAlign="center";ctx.textBaseline="bottom";
+            e.chart.data.datasets.forEach(function(ds:any,di:number){
+              e.chart.getDatasetMeta(di).data.forEach(function(bar:any,bi:number){
+                const v=ds.data[bi];if(v>0)ctx.fillText(v,bar.x,bar.y-4);
+              });
+            });
+          }}
+        }
+      });
+    }
+  },[tabG,students,editMid,editFinal,ppScores,maxPP]);
+
+  const tabStyleG=(t:string)=>({
+    background:tabG===t?"rgba(232,188,85,.12)":"transparent",
+    border:"none",borderBottom:tabG===t?"2px solid var(--gold)":"2px solid transparent",
+    color:tabG===t?"var(--gold2)":"var(--muted2)",
+    padding:"10px 22px",cursor:"pointer",
+    fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,letterSpacing:1,transition:"all .2s"
+  } as React.CSSProperties);
+
+  // ── Pre/Post summary calc ──
+  const ppStudents=students.filter((st:any)=>{const p=ppScores[st.id];return p&&p.pre!==null&&p.post!==null;});
+  let ppUp=0,ppDown=0,ppSame=0;
+  ppStudents.forEach((st:any)=>{
+    const p=ppScores[st.id];
+    const pk=getPPGroup(p.pre).key,qk=getPPGroup(p.post).key;
+    if(pk===qk)ppSame++;
+    else if((pk==="w"&&qk!=="w")||(pk==="m"&&qk==="g"))ppUp++;
+    else ppDown++;
+  });
+  const ppTotal=ppStudents.length;
+  const ppPct=(n:number)=>ppTotal?Math.round(n/ppTotal*1000)/10:0;
+
+  return(
+    <div className="fade-up" style={{padding:20,maxWidth:1000,margin:"0 auto"}}>
+      <div style={{display:"flex",borderBottom:"1px solid var(--border)",marginBottom:20}}>
+        <button style={tabStyleG("score")} onClick={()=>setTabG("score")}>📊 คะแนน</button>
+        <button style={tabStyleG("prepost")} onClick={()=>setTabG("prepost")}>👥 Pre/Post-test</button>
+      </div>
+
+      {tabG==="score"&&(
+        <div>
+          <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:16}}>📊 สรุปคะแนนรวม</div>
+          {saved&&<div style={{background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.4)",borderRadius:8,padding:"12px 18px",color:"var(--green)",fontSize:14,marginBottom:16,textAlign:"center"}}>✅ บันทึกแล้ว!</div>}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:12,marginBottom:20}}>
+            {[{icon:"👥",label:"นักเรียน",val:students.length,c:"var(--cyan)"},
+              {icon:"✅",label:"ผ่านเกณฑ์",val:passing,c:"var(--green)"},
+              {icon:"❌",label:"ไม่ผ่าน",val:withGrades.length-passing,c:"var(--red)"},
+              {icon:"📊",label:"คะแนนเฉลี่ย",val:avg!==null?avg+"":"รอกรอก",c:"var(--gold)"},
+            ].map((s,i)=>(
+              <div key={i} className="card" style={{textAlign:"center"}}>
+                <div style={{fontSize:22,marginBottom:4}}>{s.icon}</div>
+                <div className="cond" style={{fontSize:30,fontWeight:900,color:s.c}}>{s.val}</div>
+                <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+          <div className="card" style={{marginBottom:20,overflowX:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+              <div className="cond" style={{fontSize:18,color:"var(--gold)"}}>ตารางคะแนนรายบุคคล</div>
+              <button className="btn btn-gold" onClick={saveAll} style={{fontSize:14,padding:"10px 24px"}}>💾 บันทึกคะแนน</button>
+            </div>
+            <table style={{width:"100%",borderCollapse:"collapse",minWidth:640}}>
+              <thead>
+                <tr style={{borderBottom:"1px solid var(--border)"}}>
+                  {[{h:"ชื่อ",a:"left"},{h:"เก็บก่อนกลาง /35",a:"center"},{h:"กลางภาค /15",a:"center"},{h:"เก็บหลังกลาง /35",a:"center"},{h:"ปลายภาค /15",a:"center"},{h:"รวม/100",a:"center"},{h:"เกรด",a:"center"}].map(({h,a},i)=>(
+                    <th key={i} style={{padding:"8px 10px",textAlign:a as any,fontSize:11,color:"var(--muted)",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sorted.map((s:any)=>{
+                  const s1=getS1(s),s2=getS2(s),total=getTotal(s),grade=getGrade(total);
+                  return(
+                    <tr key={s.id} style={{borderBottom:"1px solid var(--border)"}}>
+                      <td style={{padding:"10px",fontSize:13}}>
+                        <span style={{fontSize:20,marginRight:8}}>{s.avatar}</span>{s.name}
+                      </td>
+                      <td style={{textAlign:"center",padding:"10px 8px"}}>
+                        <span className="mono" style={{fontSize:15,fontWeight:700,color:"#185FA5"}}>{s1}</span>
+                      </td>
+                      <td style={{textAlign:"center",padding:"8px"}}>
+                        <input type="number" min="0" max="15" value={editMid[s.id]} placeholder="—"
+                          onChange={e=>setEditMid((p:any)=>({...p,[s.id]:e.target.value}))}
+                          style={{width:56,background:"rgba(14,26,43,.8)",border:"1px solid rgba(94,200,126,.4)",color:"#5DCAA5",borderRadius:5,padding:"5px 6px",fontFamily:"'Share Tech Mono',monospace",fontSize:14,textAlign:"center",outline:"none"}}/>
+                      </td>
+                      <td style={{textAlign:"center",padding:"10px 8px"}}>
+                        <span className="mono" style={{fontSize:15,fontWeight:700,color:"#f472b6"}}>{s2}</span>
+                      </td>
+                      <td style={{textAlign:"center",padding:"8px"}}>
+                        <input type="number" min="0" max="15" value={editFinal[s.id]} placeholder="—"
+                          onChange={e=>setEditFinal((p:any)=>({...p,[s.id]:e.target.value}))}
+                          style={{width:56,background:"rgba(14,26,43,.8)",border:"1px solid rgba(232,140,74,.4)",color:"#e88c4a",borderRadius:5,padding:"5px 6px",fontFamily:"'Share Tech Mono',monospace",fontSize:14,textAlign:"center",outline:"none"}}/>
+                      </td>
+                      <td style={{textAlign:"center",padding:"10px 8px"}}>
+                        {total!==null?<span className="mono" style={{fontSize:16,fontWeight:700,color:"var(--gold)"}}>{total}</span>:<span style={{fontSize:11,color:"var(--muted)"}}>รอกรอก</span>}
+                      </td>
+                      <td style={{textAlign:"center",padding:"10px 8px"}}>
+                        <span className="cond" style={{fontSize:22,fontWeight:900,color:gradeColor(grade)}}>{grade??"—"}</span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+            <div className="card">
+              <div className="cond" style={{fontSize:16,color:"var(--gold)",marginBottom:12}}>กราฟสรุปเกรด</div>
+              <div style={{position:"relative",height:220}}><canvas id="gradeDistChart"/></div>
+            </div>
+            <div className="card">
+              <div className="cond" style={{fontSize:16,color:"var(--gold)",marginBottom:8}}>คะแนนรายส่วน (8 อันดับแรก)</div>
+              <div style={{display:"flex",gap:12,flexWrap:"wrap",fontSize:10,marginBottom:8}}>
+                {[["#185FA5","เก็บก่อนกลาง"],["#5DCAA5","กลางภาค"],["#f472b6","เก็บหลังกลาง"],["#e88c4a","ปลายภาค"]].map(([c,l])=>(
+                  <span key={l}><span style={{display:"inline-block",width:8,height:8,borderRadius:2,background:c,marginRight:3}}></span>{l}</span>
+                ))}
+              </div>
+              <div style={{position:"relative",height:200}}><canvas id="scoreBreakChart"/></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tabG==="prepost"&&(
+        <div>
+          <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:16}}>👥 วิเคราะห์กลุ่ม PRE/POST TEST</div>
+          <div className="card" style={{marginBottom:16}}>
+            <div style={{display:"flex",alignItems:"center",gap:24,flexWrap:"wrap"}}>
+              <div>
+                <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,marginBottom:6}}>คะแนนเต็ม</div>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <input type="number" value={maxPP} min={1} max={100} onChange={e=>setMaxPP(Math.max(1,+e.target.value||20))}
+                    style={{width:64,background:"rgba(14,26,43,.8)",border:"1px solid rgba(212,168,67,.3)",color:"var(--gold)",borderRadius:5,padding:"5px 8px",fontSize:14,textAlign:"center",outline:"none"}}/>
+                  <span style={{fontSize:13,color:"var(--muted)"}}>คะแนน</span>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:20,flexWrap:"wrap",alignItems:"center",fontSize:12,color:"var(--muted)"}}>
+                {[["#22c55e","เก่ง","≥67%"],["#eab308","กลาง","34–66%"],["#ef4444","อ่อน","<34%"]].map(([c,l,r])=>(
+                  <span key={l} style={{display:"flex",alignItems:"center",gap:6}}>
+                    <span style={{width:14,height:14,borderRadius:"50%",background:c,display:"inline-block"}}></span>{l} ({r})
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div style={{background:"#fff",border:"1px solid #e0e0e0",borderRadius:10,padding:"16px 20px",marginBottom:16}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,flexWrap:"wrap",gap:8}}>
+              <div className="cond" style={{fontSize:20,color:"#333"}}>ตารางคะแนน Pre-test / Post-test</div>
+              <div style={{fontSize:12,color:"#888"}}>แก้ไขคะแนนได้โดยตรง</div>
+            </div>
+            <div style={{overflowX:"auto"}}>
+            <table style={{width:"100%",borderCollapse:"collapse",minWidth:500}}>
+              <thead>
+                <tr style={{background:"#f8f8f8"}}>
+                  {["ชื่อ","Pre-test","Post-test","เปลี่ยนแปลง"].map((h,i)=>(
+                    <th key={i} style={{padding:"10px 8px",textAlign:i===0?"left":"center" as any,fontSize:12,fontWeight:600,borderBottom:"2px solid #e5e5e5",color:"#555"}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {students.map((st:any)=>{
+                  const pp=ppScores[st.id]||{pre:null,post:null};
+                  const pg=pp.pre!==null?getPPGroup(pp.pre):null;
+                  const qg=pp.post!==null?getPPGroup(pp.post):null;
+                  const same=pg&&qg&&pg.key===qg.key;
+                  const up=pg&&qg&&((pg.key==="w"&&qg.key!=="w")||(pg.key==="m"&&qg.key==="g"));
+                  const arr=same?"→":up?"⬆":"⬇";
+                  const abg=same?"#f3f4f6":up?"#f0fdf4":"#fff1f2";
+                  const aborder=same?"none":up?"1px solid #bbf7d0":"1px solid #fecdd3";
+                  return(
+                    <tr key={st.id} style={{borderBottom:"1px solid #f0f0f0"}}>
+                      <td style={{padding:"10px 8px",color:"#222",fontSize:13}}>{st.avatar} {st.name}</td>
+                      <td style={{padding:"8px",textAlign:"center"}}>
+                        <div style={{display:"inline-flex",alignItems:"center",gap:6}}>
+                          {pg&&<div style={{width:14,height:14,borderRadius:"50%",background:pg.bg,flexShrink:0}}></div>}
+                          <input type="number" min={0} max={maxPP} value={pp.pre??""} placeholder="—"
+                            onChange={e=>{const v=e.target.value===""?null:Math.min(maxPP,Math.max(0,+e.target.value));setPpScores((p:any)=>({...p,[st.id]:{...p[st.id],pre:v}}));}}
+                            style={{width:52,border:"1px solid #d1d5db",borderRadius:5,padding:"4px 6px",fontSize:13,textAlign:"center",color:"#222",background:"#fff",outline:"none"}}/>
+                        </div>
+                      </td>
+                      <td style={{padding:"8px",textAlign:"center"}}>
+                        <div style={{display:"inline-flex",alignItems:"center",gap:6}}>
+                          {qg&&<div style={{width:14,height:14,borderRadius:"50%",background:qg.bg,flexShrink:0}}></div>}
+                          <input type="number" min={0} max={maxPP} value={pp.post??""} placeholder="—"
+                            onChange={e=>{const v=e.target.value===""?null:Math.min(maxPP,Math.max(0,+e.target.value));setPpScores((p:any)=>({...p,[st.id]:{...p[st.id],post:v}}));}}
+                            style={{width:52,border:"1px solid #d1d5db",borderRadius:5,padding:"4px 6px",fontSize:13,textAlign:"center",color:"#222",background:"#fff",outline:"none"}}/>
+                        </div>
+                      </td>
+                      <td style={{padding:"8px",textAlign:"center"}}>
+                        {(pg&&qg)?<div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",gap:8,background:abg,border:aborder,borderRadius:20,padding:"5px 14px"}}>
+                          <div style={{width:16,height:16,borderRadius:"50%",background:pg.bg}}></div>
+                          <span style={{fontSize:16,fontWeight:900,color:"#111",width:18,textAlign:"center",display:"inline-block"}}>{arr}</span>
+                          <div style={{width:16,height:16,borderRadius:"50%",background:qg.bg}}></div>
+                        </div>:<span style={{fontSize:11,color:"#999"}}>รอกรอก</span>}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gap:16}}>
+            <div style={{background:"#fff",border:"1px solid #e0e0e0",borderRadius:10,padding:"16px 20px"}}>
+              <div className="cond" style={{fontSize:18,color:"#333",marginBottom:8}}>จำนวนนักเรียนในแต่ละกลุ่ม</div>
+              <div style={{display:"flex",gap:16,marginBottom:10,fontSize:11,color:"#555"}}>
+                <span><span style={{display:"inline-block",width:10,height:10,borderRadius:2,background:"#7c3aed",marginRight:3}}></span>Pre-test</span>
+                <span><span style={{display:"inline-block",width:10,height:10,borderRadius:2,background:"#0ea5e9",marginRight:3}}></span>Post-test</span>
+              </div>
+              <div style={{height:200,position:"relative"}}><canvas id="ppGroupBar"/></div>
+            </div>
+            <div style={{background:"#fff",border:"1px solid #e0e0e0",borderRadius:10,padding:"16px 20px"}}>
+              <div className="cond" style={{fontSize:18,color:"#333",marginBottom:14}}>สรุปการเปลี่ยนแปลง</div>
+              <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
+                {[{arr:"⬆",ac:"#16a34a",bg:"#f0fdf4",border:"1px solid #bbf7d0",n:ppUp,label:"พัฒนา เลื่อนกลุ่มสูงขึ้น"},
+                  {arr:"→",ac:"#92400e",bg:"#fefce8",border:"1px solid #fde68a",n:ppSame,label:"อยู่กลุ่มเดิม"},
+                  {arr:"⬇",ac:"#dc2626",bg:"#fff1f2",border:"1px solid #fecdd3",n:ppDown,label:"เลื่อนกลุ่มต่ำลง"},
+                ].map((r,i)=>(
+                  <div key={i} style={{background:r.bg,border:r.border,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:12}}>
+                    <span style={{fontSize:18,fontWeight:900,color:r.ac,width:22,textAlign:"center",display:"inline-block",flexShrink:0}}>{r.arr}</span>
+                    <div>
+                      <div className="cond" style={{fontSize:20,color:r.ac}}>{r.n} คน <span style={{fontSize:13}}>({ppPct(r.n)}%)</span></div>
+                      <div style={{fontSize:11,color:"#555"}}>{r.label}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {ppTotal>0&&(()=>{
+                const u2=Math.round(ppUp/ppTotal*100),s2=Math.round(ppSame/ppTotal*100),d2=100-u2-s2;
+                return(
+                  <>
+                    <div style={{fontSize:10,color:"#888",marginBottom:6}}>ร้อยละรวม</div>
+                    <div style={{display:"flex",height:20,borderRadius:10,overflow:"hidden",background:"#f3f4f6",marginBottom:6}}>
+                      {u2>0&&<div style={{width:u2+"%",background:"#22c55e",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff"}}>{u2}%</div>}
+                      {s2>0&&<div style={{width:s2+"%",background:"#eab308",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff"}}>{s2}%</div>}
+                      {d2>0&&<div style={{width:d2+"%",background:"#ef4444",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff"}}>{d2}%</div>}
+                    </div>
+                    <div style={{display:"flex",gap:12,fontSize:10,color:"#555"}}>
+                      <span style={{color:"#22c55e"}}>■ พัฒนา {u2}%</span>
+                      <span style={{color:"#eab308"}}>■ เดิม {s2}%</span>
+                      <span style={{color:"#ef4444"}}>■ ลดลง {d2}%</span>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TeacherAirdrop({students,setPendingAirdrop,setStudents}){
   const DEFAULT_POOL=[
     {id:"r1",name:"AWM Sniper Rifle",icon:"🔫",rarity:"LEGENDARY",color:"#f5cc70"},
@@ -2310,7 +2793,7 @@ export default function App(){
         <main>
           <PageHeader page={page} setPage={setPage}/>
           {role==="student"&&page==="dashboard"    &&currentStudent&&<StudentDashboard student={currentStudent} students={students} assignments={assignments} setPage={setPage} setStudents={setStudents}/>}
-          {role==="student"&&page==="assignments"  &&currentStudent&&<StudentAssignments student={currentStudent} assignments={assignments} setStudents={setStudents}/>}
+          {role==="student"&&page==="assignments"  &&currentStudent&&<StudentAssignments student={currentStudent} students={students} assignments={assignments} setStudents={setStudents}/>}
           {role==="student"&&page==="resources"    &&<StudentResources resources={resources}/>}
           {role==="student"&&page==="ranking"      &&<RankingPage students={students} myId={userId} isTeacher={false}/>}
           {role==="student"&&page==="inventory"    &&currentStudent&&<StudentInventory student={currentStudent}/>}
@@ -2321,6 +2804,7 @@ export default function App(){
           {role==="teacher"&&page==="t-resources"  &&<TeacherResources resources={resources} setResources={setResources}/>}
           {role==="teacher"&&page==="t-scores"     &&<TeacherScores students={students} setStudents={setStudents}/>}
           {role==="teacher"&&page==="t-exam"       &&<TeacherExamScores students={students} setStudents={setStudents}/>}
+          {role==="teacher"&&page==="t-grades"     &&<TeacherGrades students={students} setStudents={setStudents}/>}
           {role==="teacher"&&page==="t-airdrop"    &&<TeacherAirdrop students={students} setPendingAirdrop={setPendingAirdrop} setStudents={setStudents}/>}
           {role==="teacher"&&page==="ranking"      &&<RankingPage students={students} myId={undefined} isTeacher={true}/>}
         </main>
