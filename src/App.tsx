@@ -876,7 +876,8 @@ function StudentAssignments({student,students,assignments,setStudents,skipNextSa
   const allActNames=[...new Set((students||[]).flatMap((st:any)=>(st.xpLog||[]).map((l:any)=>l.activity)))];
   const actItems=allActNames.map((actName:any)=>{
     const allEntries=(students||[]).flatMap((st:any)=>(st.xpLog||[]).filter((l:any)=>l.activity===actName));
-    const fullXp=allEntries.reduce((m:number,l:any)=>Math.max(m,l.xp||0),0);
+    // ใช้ maxXp ที่ครูตั้งไว้จริง ถ้ามี ไม่งั้น fallback เป็นค่าสูงสุดที่เคยให้ (รองรับข้อมูลเก่าก่อนมีฟิลด์นี้)
+    const fullXp=allEntries.reduce((m:number,l:any)=>Math.max(m,l.maxXp||l.xp||0),0);
     const phase=allEntries[0]?.phase||"before";
     const chapterId=allEntries[0]?.chapterId||"CH1";
     const myLog=(student.xpLog||[]).find((l:any)=>l.activity===actName);
@@ -1466,9 +1467,11 @@ function TeacherStudents({students,assignments,setStudents}){
   // แก้ไข xpLog รายกิจกรรม
   function saveEditLog(){
     if(!s||!editLogModal)return;
-    const{idx,xp,activity}=editLogModal;
+    const{idx,xp,maxXp,activity}=editLogModal;
     const newXpVal=Number(xp);
+    const newMaxXpVal=Number(maxXp);
     if(isNaN(newXpVal)||newXpVal<0)return;
+    if(isNaN(newMaxXpVal)||newMaxXpVal<=0)return;
     const oldLog=s.xpLog?.[idx];
     if(!oldLog)return;
     const diff=newXpVal-oldLog.xp;
@@ -1476,7 +1479,7 @@ function TeacherStudents({students,assignments,setStudents}){
       const updated=prev.map((st:any)=>{
         if(st.id!==s.id)return st;
         const newLog=[...(st.xpLog||[])];
-        newLog[idx]={...newLog[idx],xp:newXpVal,activity:activity.trim()||newLog[idx].activity};
+        newLog[idx]={...newLog[idx],xp:newXpVal,maxXp:newMaxXpVal,activity:activity.trim()||newLog[idx].activity};
         return{...st,xp:st.xp+diff,xpLog:newLog};
       });
       gasSave("saveStudents",updated);
@@ -1552,10 +1555,17 @@ function TeacherStudents({students,assignments,setStudents}){
               <input className="input" value={editLogModal.activity}
                 onChange={e=>setEditLogModal({...editLogModal,activity:e.target.value})}/>
             </div>
-            <div style={{marginBottom:16}}>
-              <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>XP ที่ได้</label>
-              <input className="input" type="number" min="0" value={editLogModal.xp}
-                onChange={e=>setEditLogModal({...editLogModal,xp:e.target.value})}/>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
+              <div>
+                <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>XP เต็ม</label>
+                <input className="input" type="number" min="1" value={editLogModal.maxXp}
+                  onChange={e=>setEditLogModal({...editLogModal,maxXp:e.target.value})}/>
+              </div>
+              <div>
+                <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>XP ที่ได้</label>
+                <input className="input" type="number" min="0" value={editLogModal.xp}
+                  onChange={e=>setEditLogModal({...editLogModal,xp:e.target.value})}/>
+              </div>
             </div>
             <div style={{display:"flex",gap:10}}>
               <button className="btn btn-gold" onClick={saveEditLog} style={{flex:1,fontSize:15,padding:12}}>💾 บันทึก</button>
@@ -1666,7 +1676,7 @@ function TeacherStudents({students,assignments,setStudents}){
                   <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{log.date}</div>
                 </div>
                 <div className="mono" style={{fontSize:15,fontWeight:700,color:"var(--gold)"}}>+{log.xp} XP</div>
-                <button className="btn-ghost" onClick={()=>setEditLogModal({idx:i,xp:log.xp,activity:log.activity})}
+                <button className="btn-ghost" onClick={()=>setEditLogModal({idx:i,xp:log.xp,maxXp:log.maxXp||log.xp,activity:log.activity})}
                   style={{fontSize:11,padding:"4px 10px",flexShrink:0}}>✏️</button>
               </div>
             ))}
@@ -2106,56 +2116,54 @@ function TeacherResources({resources,setResources}){
 // ─────────────────────────────────────────────
 function TeacherScores({students,setStudents}){
   const [tab,setTab]=useState("add");
-  const [targetMode,setTargetMode]=useState("single"); // "single" | "multi" | "all"
-  const [selStu,setSelStu]=useState("");
-  const [selMulti,setSelMulti]=useState([]); // หลายคน
-  const [xpAmt,setXpAmt]=useState("");
+  const [maxXpAmt,setMaxXpAmt]=useState(""); // XP เต็มของกิจกรรมนี้ — ค่าเริ่มต้นของทุกคนในตาราง แก้ทีละคนได้
   const [activityName,setActivityName]=useState("");
   const [selChapter,setSelChapter]=useState("CH1");
   const [selPhase,setSelPhase]=useState("before");
+  const [excluded,setExcluded]=useState<any>({}); // {studentId:true} = ไม่รวมคนนี้
+  const [perStuXp,setPerStuXp]=useState<any>({}); // {studentId:"ค่าที่แก้เอง"} — ถ้าไม่มีจะ fallback ไปที่ maxXpAmt
   const [msg,setMsg]=useState(null);
-  const [editAct,setEditAct]=useState<any>(null); // {oldName, newName, newChapterId}
+  const [editAct,setEditAct]=useState<any>(null); // {oldName, newName, newChapterId, newMaxXp}
 
   function toast(t,isErr=false){setMsg({text:t,err:isErr});setTimeout(()=>setMsg(null),3500);}
+  function xpFor(id){return perStuXp[id]!==undefined?perStuXp[id]:maxXpAmt;}
+  function includedList(){return students.filter((s:any)=>!excluded[s.id]);}
 
   function saveEditActivity(){
     if(!editAct)return;
-    const{oldName,newName,newChapterId}=editAct;
+    const{oldName,newName,newChapterId,newMaxXp}=editAct;
     if(!newName.trim()){toast("กรุณาใส่ชื่อกิจกรรม",true);return;}
-    setStudents(prev=>prev.map(s=>({
-      ...s,
-      xpLog:(s.xpLog||[]).map((log:any)=>log.activity===oldName
-        ?{...log,activity:newName.trim(),chapterId:newChapterId}
-        :log)
-    })));
+    const newMax=Number(newMaxXp)||0;
+    if(newMax<=0){toast("กรุณาใส่ XP เต็มให้ถูกต้อง",true);return;}
+    setStudents((prev:any)=>prev.map((s:any)=>{
+      let xpDiff=0;
+      const newLog=(s.xpLog||[]).map((log:any)=>{
+        if(log.activity!==oldName)return log;
+        // ถ้าคนนี้ได้เกิน XP เต็มใหม่ ให้ปรับลงมาไม่ให้เกิน (เหมือนตอนแก้คะแนนเต็มของใบงาน)
+        const cappedXp=Math.min(log.xp||0,newMax);
+        xpDiff+=cappedXp-(log.xp||0);
+        return{...log,activity:newName.trim(),chapterId:newChapterId,maxXp:newMax,xp:cappedXp};
+      });
+      return{...s,xp:s.xp+xpDiff,xpLog:newLog};
+    }));
     toast(`✅ แก้ไข "${oldName}" → "${newName}" สำเร็จ!`);
     setEditAct(null);
   }
 
-  function toggleMulti(id){
-    setSelMulti(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
-  }
-
   function doAdd(){
-    if(!xpAmt||Number(xpAmt)<=0){toast("กรุณาใส่จำนวน XP",true);return;}
+    if(!maxXpAmt||Number(maxXpAmt)<=0){toast("กรุณาใส่ XP เต็มของกิจกรรมนี้",true);return;}
     if(!activityName.trim()){toast("กรุณาใส่ชื่องาน/กิจกรรม",true);return;}
-    if(targetMode==="single"&&!selStu){toast("กรุณาเลือกนักเรียน",true);return;}
-    if(targetMode==="multi"&&selMulti.length===0){toast("กรุณาเลือกนักเรียนอย่างน้อย 1 คน",true);return;}
+    const included=includedList();
+    if(included.length===0){toast("กรุณาเลือกนักเรียนอย่างน้อย 1 คน",true);return;}
     const today=new Date().toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
-    const logEntry={activity:activityName.trim(),xp:Number(xpAmt),date:today,chapterId:selChapter,phase:selPhase};
-    if(targetMode==="all"){
-      setStudents(prev=>prev.map(s=>({...s,xp:s.xp+Number(xpAmt),xpLog:[...(s.xpLog||[]),logEntry]})));
-      toast(`✅ เพิ่ม ${xpAmt} XP จาก "${activityName}" ให้ทุกคน ${students.length} คน!`);
-    } else if(targetMode==="multi"){
-      setStudents(prev=>prev.map(s=>selMulti.includes(s.id)?{...s,xp:s.xp+Number(xpAmt),xpLog:[...(s.xpLog||[]),logEntry]}:s));
-      toast(`✅ เพิ่ม ${xpAmt} XP จาก "${activityName}" ให้ ${selMulti.length} คน!`);
-      setSelMulti([]);
-    } else {
-      const name=students.find(s=>s.id===selStu)?.name||"";
-      setStudents(prev=>prev.map(s=>s.id===selStu?{...s,xp:s.xp+Number(xpAmt),xpLog:[...(s.xpLog||[]),logEntry]}:s));
-      toast(`✅ เพิ่ม ${xpAmt} XP จาก "${activityName}" ให้ ${name}!`);
-    }
-    setXpAmt("");setActivityName("");setSelStu("");setSelChapter("CH1");setSelPhase("before");
+    setStudents((prev:any)=>prev.map((s:any)=>{
+      if(excluded[s.id])return s;
+      const earned=Number(xpFor(s.id))||0;
+      const logEntry={activity:activityName.trim(),xp:earned,maxXp:Number(maxXpAmt),date:today,chapterId:selChapter,phase:selPhase};
+      return{...s,xp:s.xp+earned,xpLog:[...(s.xpLog||[]),logEntry]};
+    }));
+    toast(`✅ เพิ่ม XP จาก "${activityName}" ให้ ${included.length} คน!`);
+    setMaxXpAmt("");setActivityName("");setSelChapter("CH1");setSelPhase("before");setExcluded({});setPerStuXp({});
   }
 
   const allActivities=useMemo(()=>{
@@ -2163,7 +2171,8 @@ function TeacherScores({students,setStudents}){
     students.forEach(s=>{
       (s.xpLog||[]).forEach(log=>{
         if(!map[log.activity])map[log.activity]={name:log.activity,chapterId:log.chapterId||"CH1",entries:{}};
-        map[log.activity].entries[s.id]={xp:log.xp,date:log.date};
+        map[log.activity].entries[s.id]={xp:log.xp,maxXp:log.maxXp,date:log.date};
+        map[log.activity].maxXp=Math.max(map[log.activity].maxXp||0,log.maxXp||log.xp||0);
       });
     });
     return Object.values(map);
@@ -2207,10 +2216,10 @@ function TeacherScores({students,setStudents}){
                   placeholder="เช่น ตอบคำถาม, แบบทดสอบ"/>
               </div>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
               <div>
-                <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>จำนวน XP</label>
-                <input className="input" type="number" value={xpAmt} onChange={e=>setXpAmt(e.target.value)} placeholder="เช่น 200"/>
+                <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>XP เต็ม</label>
+                <input className="input" type="number" value={maxXpAmt} onChange={e=>setMaxXpAmt(e.target.value)} placeholder="เช่น 200"/>
               </div>
               <div>
                 <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>ช่วงเวลา</label>
@@ -2226,85 +2235,41 @@ function TeacherScores({students,setStudents}){
                 </div>
               </div>
             </div>
-            <div style={{marginBottom:16}}>
-              <div>
-                <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>ให้คะแนน</label>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
-                  {[["single","👤 รายบุคคล"],["multi","☑️ เลือกหลายคน"],["all","👥 ทั้งห้อง"]].map(([m,l])=>(
-                    <button key={m} onClick={()=>{setTargetMode(m);setSelStu("");setSelMulti([]);}} className="btn"
-                      style={{background:targetMode===m?"rgba(232,188,85,.18)":"rgba(255,255,255,.05)",
-                        border:`1px solid ${targetMode===m?"rgba(232,188,85,.6)":"var(--border)"}`,
-                        color:targetMode===m?"var(--gold)":"var(--muted2)",
-                        borderRadius:6,padding:"10px 6px",fontSize:12,
-                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:.5}}>
-                      {l}
-                    </button>
-                  ))}
-                </div>
-              </div>
+
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2}}>ให้คะแนนนักเรียน ({includedList().length}/{students.length} คน)</label>
+              <span style={{fontSize:11,color:"var(--muted)"}}>คลิกเลขเพื่อแก้ไข</span>
             </div>
-
-            {/* เลือกรายบุคคล */}
-            {targetMode==="single"&&(
-              <div style={{marginBottom:16}}>
-                <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>เลือกนักเรียน</label>
-                <select className="input" value={selStu} onChange={e=>setSelStu(e.target.value)}>
-                  <option value="">-- เลือกนักเรียน --</option>
-                  {students.map(s=><option key={s.id} value={s.id}>{s.avatar} {s.name} · {s.xp.toLocaleString()} XP</option>)}
-                </select>
-              </div>
-            )}
-
-            {/* เลือกหลายคน */}
-            {targetMode==="multi"&&(
-              <div style={{marginBottom:16}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-                  <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2}}>เลือกนักเรียน ({selMulti.length} คน)</label>
-                  <div style={{display:"flex",gap:8}}>
-                    <button className="btn-ghost" onClick={()=>setSelMulti(students.map(s=>s.id))} style={{fontSize:11,padding:"4px 12px"}}>เลือกทั้งหมด</button>
-                    <button className="btn-ghost" onClick={()=>setSelMulti([])} style={{fontSize:11,padding:"4px 12px"}}>ล้าง</button>
+            <div style={{maxHeight:280,overflowY:"auto",border:"1px solid var(--border)",borderRadius:8,marginBottom:10}}>
+              {students.map((s:any,i:number)=>{
+                const isExcluded=!!excluded[s.id];
+                const val=xpFor(s.id);
+                return(
+                  <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",
+                    borderBottom:i<students.length-1?"1px solid rgba(212,168,67,.12)":"none",opacity:isExcluded?.4:1}}>
+                    <input type="checkbox" checked={!isExcluded}
+                      onChange={()=>setExcluded((p:any)=>({...p,[s.id]:!p[s.id]}))}
+                      style={{width:15,height:15,accentColor:"var(--gold)"}}/>
+                    <span style={{fontSize:16,flexShrink:0}}>{s.avatar}</span>
+                    <span style={{flex:1,fontSize:13,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name}</span>
+                    <input type="number" value={val} disabled={isExcluded}
+                      onChange={e=>setPerStuXp((p:any)=>({...p,[s.id]:e.target.value}))}
+                      style={{width:56,background:"rgba(10,20,38,.8)",border:"1px solid rgba(232,188,85,.4)",
+                        color:"var(--gold)",borderRadius:5,padding:"4px 8px",textAlign:"center",
+                        fontFamily:"'Share Tech Mono',monospace",fontSize:13,outline:"none"}}/>
                   </div>
-                </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:6,maxHeight:260,overflowY:"auto",padding:4}}>
-                  {students.map(s=>{
-                    const selected=selMulti.includes(s.id);
-                    return(
-                      <div key={s.id} onClick={()=>toggleMulti(s.id)}
-                        style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",
-                          background:selected?"rgba(232,188,85,.15)":"rgba(255,255,255,.04)",
-                          border:`1px solid ${selected?"rgba(232,188,85,.5)":"var(--border)"}`,
-                          borderRadius:7,cursor:"pointer",transition:"all .15s"}}>
-                        <div style={{width:18,height:18,borderRadius:4,
-                          background:selected?"var(--gold)":"transparent",
-                          border:`2px solid ${selected?"var(--gold)":"var(--muted)"}`,
-                          display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                          {selected&&<span style={{fontSize:12,color:"#000",lineHeight:1}}>✓</span>}
-                        </div>
-                        <span style={{fontSize:18,flexShrink:0}}>{s.avatar}</span>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:12,color:selected?"var(--gold)":"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name}</div>
-                          <div className="mono" style={{fontSize:10,color:"var(--muted)"}}>{s.xp.toLocaleString()} XP</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {targetMode==="all"&&(
-              <div style={{background:"rgba(94,200,126,.08)",border:"1px solid rgba(94,200,126,.3)",
-                borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:13,color:"var(--green)"}}>
-                👥 จะเพิ่ม XP ให้นักเรียนทั้งหมด <strong>{students.length} คน</strong> พร้อมกัน
-              </div>
-            )}
+                );
+              })}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:16}}>
+              <button className="btn-ghost" onClick={()=>setExcluded({})} style={{fontSize:11,padding:"7px 4px"}}>✓ เลือกทั้งหมด</button>
+              <button className="btn-ghost" onClick={()=>{const e:any={};students.forEach((s:any)=>e[s.id]=true);setExcluded(e);}} style={{fontSize:11,padding:"7px 4px"}}>⊘ ล้างทั้งหมด</button>
+              <button className="btn-ghost" onClick={()=>setPerStuXp({})} style={{fontSize:11,padding:"7px 4px"}}>↺ เท่ากับเต็มทุกคน</button>
+            </div>
 
             <button className="btn btn-gold" onClick={doAdd}
               style={{width:"100%",fontSize:17,padding:"15px 0",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-              <span>➕</span>
-              {targetMode==="all"?`เพิ่ม XP ให้ทุกคน (${students.length} คน)`:
-               targetMode==="multi"?`เพิ่ม XP ให้ ${selMulti.length} คนที่เลือก`:
-               "เพิ่ม XP"}
+              <span>💾</span> บันทึกให้ {includedList().length} คนที่เลือก
             </button>
           </div>
 
@@ -2334,11 +2299,16 @@ function TeacherScores({students,setStudents}){
                 {CHAPTERS.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label} {c.title}</option>)}
               </select>
             </div>
-            <div style={{marginBottom:20}}>
+            <div style={{marginBottom:14}}>
               <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>ชื่อกิจกรรม</label>
               <input className="input" value={editAct.newName} onChange={e=>setEditAct({...editAct,newName:e.target.value})}
                 placeholder="ชื่อกิจกรรม"/>
-              <div style={{fontSize:11,color:"var(--muted)",marginTop:6}}>จะแก้ไขกิจกรรมชื่อนี้ในทุกนักเรียนที่ได้รับ</div>
+            </div>
+            <div style={{marginBottom:20}}>
+              <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>XP เต็ม</label>
+              <input className="input" type="number" min="1" value={editAct.newMaxXp} onChange={e=>setEditAct({...editAct,newMaxXp:e.target.value})}
+                placeholder="เช่น 200"/>
+              <div style={{fontSize:11,color:"var(--muted)",marginTop:6}}>จะแก้ไขทุกนักเรียนที่ได้รับกิจกรรมนี้พร้อมกัน — ถ้าใครได้เกิน XP เต็มใหม่ จะปรับลงมาให้ไม่เกินอัตโนมัติ</div>
             </div>
             <div style={{display:"flex",gap:10}}>
               <button className="btn btn-gold" onClick={saveEditActivity} style={{flex:1,fontSize:15,padding:12}}>💾 บันทึก</button>
@@ -2370,7 +2340,7 @@ function TeacherScores({students,setStudents}){
                         <span className="mono" style={{fontSize:11,color:"var(--gold)",padding:"3px 8px"}}>รวม {totalGiven.toLocaleString()} XP</span>
                       </div>
                     </div>
-                    <button className="btn-ghost" onClick={()=>setEditAct({oldName:act.name,newName:act.name,newChapterId:act.chapterId||"CH1"})}
+                    <button className="btn-ghost" onClick={()=>setEditAct({oldName:act.name,newName:act.name,newChapterId:act.chapterId||"CH1",newMaxXp:act.maxXp||""})}
                       style={{fontSize:12,padding:"6px 14px",flexShrink:0}}>✏️ แก้ไข</button>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
