@@ -809,19 +809,50 @@ function StudentDashboard({student,students,assignments,setPage,setStudents}){
 // ─────────────────────────────────────────────
 function xpToScore(xp){return Math.round((xp||0)/25);}
 
-function StudentAssignments({student,students,assignments,setStudents}){
+function StudentAssignments({student,students,assignments,setStudents,skipNextSave,refreshFromSheet}){
   const [uploadModal,setUploadModal]=useState(null);
   const [driveLink,setDriveLink]=useState("");
-  function openUpload(a){setUploadModal(a);setDriveLink("");}
-  function submitWork(){
-    if(!uploadModal)return;
-    if(!driveLink.trim()){return;}
+  const [uploadTab,setUploadTab]=useState("file"); // "file" | "link"
+  const [pickedFile,setPickedFile]=useState<File|null>(null);
+  const [submitting,setSubmitting]=useState(false);
+  const [submitErr,setSubmitErr]=useState("");
+  const MAX_FILE_MB=8;
+  function openUpload(a){setUploadModal(a);setDriveLink("");setPickedFile(null);setUploadTab("file");setSubmitErr("");}
+
+  async function submitWork(){
+    if(!uploadModal||submitting)return;
+    if(uploadTab==="link"&&!driveLink.trim())return;
+    if(uploadTab==="file"&&!pickedFile)return;
+    if(pickedFile&&pickedFile.size>MAX_FILE_MB*1024*1024){
+      setSubmitErr(`ไฟล์ใหญ่เกินไป (สูงสุด ${MAX_FILE_MB}MB) ลองบีบอัดไฟล์หรือใช้ลิงก์ Google Drive แทน`);
+      return;
+    }
+    setSubmitting(true);setSubmitErr("");
     const today=new Date().toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
-    // XP = 0 ก่อน จนกว่าครูจะตรวจและให้คะแนน
-    setStudents(prev=>prev.map(s=>s.id===student.id?{...s,submissions:{...s.submissions,[uploadModal.id]:{file:driveLink,submittedAt:today,xpEarned:0,maxXp:uploadModal.xp,graded:false}}}:s));
-    setUploadModal(null);
+    const assignmentId=uploadModal.id;
+    try{
+      if(uploadTab==="file"&&pickedFile){
+        const base64=await fileToBase64(pickedFile);
+        // อัปเดตหน้าจอทันที (ยังไม่รู้ลิงก์ไฟล์จริงจน sync กลับมา) เพื่อไม่ให้รอค้าง
+        skipNextSave();
+        setStudents(prev=>prev.map(s=>s.id===student.id?{...s,submissions:{...s.submissions,[assignmentId]:{file:"",submittedAt:today,xpEarned:0,maxXp:uploadModal.xp,graded:false,uploading:true}}}:s));
+        await gasSubmitAssignment({studentId:student.id,assignmentId,fileData:base64,fileName:pickedFile.name,mimeType:pickedFile.type});
+      } else {
+        skipNextSave();
+        setStudents(prev=>prev.map(s=>s.id===student.id?{...s,submissions:{...s.submissions,[assignmentId]:{file:driveLink,submittedAt:today,xpEarned:0,maxXp:uploadModal.xp,graded:false}}}:s));
+        await gasSubmitAssignment({studentId:student.id,assignmentId,driveLink});
+      }
+      setUploadModal(null);
+      setTimeout(()=>{refreshFromSheet();},1800); // รอเซิร์ฟเวอร์บันทึกเสร็จ แล้วดึงของจริงมาซิงก์ใส่หน้าจอ
+    }catch(e){
+      setSubmitErr("ส่งงานไม่สำเร็จ ลองใหม่อีกครั้ง");
+    }finally{
+      setSubmitting(false);
+    }
   }
-  function removeSubmission(id){
+
+  async function removeSubmission(id){
+    skipNextSave();
     setStudents(prev=>prev.map(s=>{
       if(s.id!==student.id)return s;
       const sub=s.submissions[id];
@@ -829,8 +860,10 @@ function StudentAssignments({student,students,assignments,setStudents}){
       // หักคะแนนเฉพาะที่ครูตรวจแล้วเท่านั้น
       return{...s,xp:s.xp-(sub?.graded?sub.xpEarned||0:0),submissions:rest};
     }));
+    await gasRemoveSubmission({studentId:student.id,assignmentId:id});
+    setTimeout(()=>{refreshFromSheet();},1500);
   }
-  function replaceFile(id){removeSubmission(id);const a=assignments.find(x=>x.id===id);if(a)setUploadModal(a);}
+  function replaceFile(id){removeSubmission(id);const a=assignments.find(x=>x.id===id);if(a)setTimeout(()=>openUpload(a),50);}
 
   // ── รวมภาระงาน + กิจกรรมในห้องเรียน แล้วแบ่งกลุ่มตามแท็กก่อน/หลังกลางภาค ──
   const chOf=(id)=>CHAPTERS.find(c=>c.id===id)||CHAPTERS[0];
@@ -849,7 +882,9 @@ function StudentAssignments({student,students,assignments,setStudents}){
     const myLog=(student.xpLog||[]).find((l:any)=>l.activity===actName);
     return{kind:"activity",key:"act_"+actName,actName,fullXp,phase,ch:chOf(chapterId),myLog};
   });
-  const allItems=[...taskItems,...actItems];
+  // เรียงตามบทเรียน 1→2→3→4 (ตัดผ่านทั้งภาระงานและกิจกรรมในกลุ่มเดียวกัน)
+  const chOrder=(id)=>{const i=CHAPTERS.findIndex(c=>c.id===id);return i===-1?999:i;};
+  const allItems=[...taskItems,...actItems].sort((x:any,y:any)=>chOrder(x.ch.id)-chOrder(y.ch.id));
   const groups=[
     {phase:"before",label:"ก่อนกลางภาค",dot:"#a78bfa",tint:"rgba(167,139,250,.15)",text:"#a78bfa"},
     {phase:"after", label:"หลังกลางภาค",dot:"#f472b6",tint:"rgba(244,114,182,.15)",text:"#f472b6"},
@@ -861,19 +896,41 @@ function StudentAssignments({student,students,assignments,setStudents}){
         <div className="overlay">
           <div className="card card-cyan" style={{width:"100%",maxWidth:480}}>
             <div className="cond" style={{fontSize:22,color:"var(--cyan)",letterSpacing:2,marginBottom:4}}>📎 ส่งงาน</div>
-            <div style={{color:"var(--muted2)",fontSize:13,marginBottom:4}}>{uploadModal.title} <span style={{color:"var(--muted)"}}>(เต็ม {uploadModal.xp} XP / {xpToScore(uploadModal.xp)} คะแนน)</span></div>
-            <div style={{marginBottom:14}}>
-              <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>🔗 ลิงก์ Google Drive</label>
-              <input className="input" value={driveLink} onChange={e=>setDriveLink(e.target.value)}
-                placeholder="https://drive.google.com/..."/>
-              <div style={{fontSize:11,color:"var(--muted)",marginTop:6}}>
-                💡 เปิด Drive → อัปโหลดไฟล์ → คลิกขวา → "Get link" → Copy มาวางที่นี่
-              </div>
+            <div style={{color:"var(--muted2)",fontSize:13,marginBottom:16}}>{uploadModal.title} <span style={{color:"var(--muted)"}}>(เต็ม {uploadModal.xp} XP / {xpToScore(uploadModal.xp)} คะแนน)</span></div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginBottom:16,background:"rgba(18,32,52,.8)",borderRadius:6,padding:4}}>
+              {[["file","📎 แนบไฟล์"],["link","🔗 วางลิงก์"]].map(([t,l])=>(
+                <button key={t} onClick={()=>{setUploadTab(t);setSubmitErr("");}} className="btn"
+                  style={{background:uploadTab===t?"var(--bg3)":"transparent",
+                    border:uploadTab===t?"1px solid rgba(78,202,174,.4)":"1px solid transparent",
+                    color:uploadTab===t?"var(--cyan)":"var(--muted)",padding:"9px",borderRadius:4,fontSize:13}}>{l}</button>
+              ))}
             </div>
+            {uploadTab==="file"?(
+              <div style={{marginBottom:14}}>
+                <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>📎 เลือกไฟล์ PDF หรือรูปภาพ</label>
+                <input type="file" accept=".pdf,image/*" onChange={e=>{setPickedFile(e.target.files?.[0]||null);setSubmitErr("");}}
+                  style={{width:"100%",fontSize:13,color:"var(--muted2)"}}/>
+                {pickedFile&&<div style={{fontSize:12,color:"var(--green)",marginTop:8}}>✓ เลือกแล้ว: {pickedFile.name} ({(pickedFile.size/1024/1024).toFixed(2)} MB)</div>}
+                <div style={{fontSize:11,color:"var(--muted)",marginTop:6}}>📌 รองรับไฟล์ PDF และรูปภาพ ขนาดไม่เกิน {MAX_FILE_MB}MB</div>
+              </div>
+            ):(
+              <div style={{marginBottom:14}}>
+                <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>🔗 ลิงก์ Google Drive</label>
+                <input className="input" value={driveLink} onChange={e=>setDriveLink(e.target.value)}
+                  placeholder="https://drive.google.com/..."/>
+                <div style={{fontSize:11,color:"var(--muted)",marginTop:6}}>
+                  💡 เปิด Drive → อัปโหลดไฟล์ → คลิกขวา → "Get link" → Copy มาวางที่นี่
+                </div>
+              </div>
+            )}
+            {submitErr&&<div style={{background:"rgba(232,96,96,.14)",border:"1px solid rgba(232,96,96,.4)",borderRadius:5,padding:"9px 14px",color:"var(--red)",fontSize:13,marginBottom:12}}>{submitErr}</div>}
             <div style={{display:"flex",gap:10}}>
-              <button className="btn btn-cyan" onClick={submitWork} disabled={!driveLink.trim()}
-                style={{flex:1,opacity:driveLink.trim()?1:.4}}>✅ ส่งงาน</button>
-              <button className="btn-outline" onClick={()=>setUploadModal(null)} style={{flex:1}}>ยกเลิก</button>
+              <button className="btn btn-cyan" onClick={submitWork}
+                disabled={submitting||(uploadTab==="link"?!driveLink.trim():!pickedFile)}
+                style={{flex:1,opacity:(submitting||(uploadTab==="link"?!driveLink.trim():!pickedFile))?.4:1}}>
+                {submitting?"⏳ กำลังส่ง...":"✅ ส่งงาน"}
+              </button>
+              <button className="btn-outline" onClick={()=>setUploadModal(null)} style={{flex:1}} disabled={submitting}>ยกเลิก</button>
             </div>
           </div>
         </div>
@@ -906,17 +963,18 @@ function StudentAssignments({student,students,assignments,setStudents}){
                       <div style={{fontSize:14,fontWeight:600,color:"#fff",marginBottom:4}}>{a.title} <span style={{fontSize:12,color:"var(--muted)",fontWeight:400}}>(เต็ม {a.xp} XP / {xpToScore(a.xp)} คะแนน)</span></div>
                       <div style={{fontSize:12,color:"var(--muted)"}}>{a.desc} · ครบกำหนด {a.due}</div>
                       {sub&&<div style={{fontSize:12,marginTop:4}}>
-                        <a href={sub.file} target="_blank" rel="noreferrer" style={{color:"var(--cyan)"}}>🔗 ดูไฟล์งาน</a>
+                        {sub.uploading?<span style={{color:"var(--gold)"}}>⏳ กำลังอัปโหลดไฟล์...</span>:
+                          <a href={sub.file} target="_blank" rel="noreferrer" style={{color:"var(--cyan)"}}>🔗 ดูไฟล์งาน</a>}
                         <span style={{color:"var(--muted)"}}> · {sub.submittedAt}</span>
-                        <span style={{marginLeft:8,color:sub.graded?"var(--gold)":"var(--muted)",fontFamily:"'Share Tech Mono',monospace",fontSize:11}}>
+                        {!sub.uploading&&<span style={{marginLeft:8,color:sub.graded?"var(--gold)":"var(--muted)",fontFamily:"'Share Tech Mono',monospace",fontSize:11}}>
                           {sub.graded?`${sub.xpEarned} XP (${xpToScore(sub.xpEarned)} คะแนน)`:"⏳ รอครูตรวจ"}
-                        </span>
+                        </span>}
                       </div>}
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:6,flexShrink:0}}>
-                      {!sub&&<button className="btn btn-cyan" onClick={()=>openUpload(a)} style={{padding:"8px 14px",fontSize:12}}>📎 แนบลิงก์</button>}
-                      {sub&&<button className="btn-ghost" onClick={()=>replaceFile(a.id)} style={{fontSize:11}}>🔄 เปลี่ยน</button>}
-                      {sub&&<button className="btn btn-red" onClick={()=>removeSubmission(a.id)} style={{padding:"6px 12px",fontSize:11}}>🗑 ลบ</button>}
+                      {!sub&&<button className="btn btn-cyan" onClick={()=>openUpload(a)} style={{padding:"8px 14px",fontSize:12}}>📎 ส่งงาน</button>}
+                      {sub&&!sub.uploading&&<button className="btn-ghost" onClick={()=>replaceFile(a.id)} style={{fontSize:11}}>🔄 เปลี่ยน</button>}
+                      {sub&&!sub.uploading&&<button className="btn btn-red" onClick={()=>removeSubmission(a.id)} style={{padding:"6px 12px",fontSize:11}}>🗑 ลบ</button>}
                     </div>
                   </div>
                 );
@@ -1692,6 +1750,24 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents}){
   // เปลี่ยนแท็กก่อน/หลังกลางภาคของใบงานที่มีอยู่แล้ว — ไม่กระทบคะแนน/การส่งงานเดิม
   function setPhase(id,phase){setAssignments(prev=>prev.map(a=>a.id===id?{...a,phase}:a));}
 
+  // ── แก้ไขใบงานที่ลงไปแล้ว (ชื่อ/คะแนนเต็ม/กำหนดส่ง/รายละเอียด/ประเภท) ──
+  const [editModal,setEditModal]=useState(null);
+  const [editForm,setEditForm]=useState({chapterId:"CH1",title:"",xp:200,due:"",desc:"",type:"worksheet"});
+  function openEdit(a){setEditModal(a);setEditForm({chapterId:a.chapterId,title:a.title,xp:a.xp,due:a.due,desc:a.desc,type:a.type});}
+  function saveEdit(){
+    if(!editModal||!editForm.title.trim())return;
+    const newXp=Number(editForm.xp)||0;
+    setAssignments(prev=>prev.map(a=>a.id===editModal.id?{...a,...editForm,xp:newXp}:a));
+    // ถ้าลดคะแนนเต็มลงจนต่ำกว่าที่บางคนได้ไปแล้ว ให้ปรับคะแนนที่ได้ลงมาไม่ให้เกินเต็มใหม่
+    setStudents((prev:any)=>prev.map((s:any)=>{
+      const sub=s.submissions?.[editModal.id];
+      if(!sub||!sub.graded||(sub.xpEarned||0)<=newXp)return s;
+      const diff=newXp-(sub.xpEarned||0); // ค่าติดลบ
+      return{...s,xp:s.xp+diff,submissions:{...s.submissions,[editModal.id]:{...sub,xpEarned:newXp,maxXp:newXp}}};
+    }));
+    setEditModal(null);
+  }
+
   function openCheck(a){
     setCheckModal(a);
     setEditMaxXp(String(a.xp));
@@ -1788,6 +1864,39 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents}){
             <div style={{display:"flex",gap:10}}>
               <button className="btn btn-gold" onClick={save} style={{flex:1,fontSize:16,padding:13}}>💾 บันทึก</button>
               <button className="btn-outline" onClick={()=>setModal(false)} style={{flex:1}}>ยกเลิก</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editModal&&(
+        <div className="overlay">
+          <div className="card card-gold" style={{width:"100%",maxWidth:500}}>
+            <div className="cond" style={{fontSize:24,color:"var(--gold)",letterSpacing:2,marginBottom:20}}>✏️ แก้ไขงาน</div>
+            {[["ชื่องาน","title","text"],["XP เต็ม","xp","number"],["วันครบกำหนด","due","text"],["รายละเอียด","desc","text"]].map(([l,k,t])=>(
+              <div key={k} style={{marginBottom:14}}>
+                <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:7}}>{l.toUpperCase()}</label>
+                <input className="input" type={t} value={(editForm as any)[k]} onChange={e=>setEditForm(p=>({...p,[k]:e.target.value}))} placeholder={l}/>
+              </div>
+            ))}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
+              <div><label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:7}}>บทเรียน</label>
+                <select className="input" value={editForm.chapterId} onChange={e=>setEditForm(p=>({...p,chapterId:e.target.value}))}>
+                  {CHAPTERS.map(c=><option key={c.id} value={c.id}>{c.icon} {c.title}</option>)}
+                </select>
+              </div>
+              <div><label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:7}}>ประเภทงาน</label>
+                <select className="input" value={editForm.type} onChange={e=>setEditForm(p=>({...p,type:e.target.value}))}>
+                  {Object.entries(TYPE_META).map(([k,v])=><option key={k} value={k}>{v.icon} {v.label}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{fontSize:11,color:"#eab308",marginBottom:16,padding:"8px 12px",background:"rgba(234,179,8,.1)",borderRadius:6}}>
+              💡 ถ้าลด XP เต็มลงต่ำกว่าที่บางคนได้ไปแล้ว ระบบจะปรับคะแนนคนนั้นลงมาไม่ให้เกินเต็มใหม่อัตโนมัติ
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button className="btn btn-gold" onClick={saveEdit} style={{flex:1,fontSize:16,padding:13}}>💾 บันทึก</button>
+              <button className="btn-outline" onClick={()=>setEditModal(null)} style={{flex:1}}>ยกเลิก</button>
             </div>
           </div>
         </div>
@@ -1898,6 +2007,7 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents}){
                     </div>
                   </div>
                   <div className="mono" style={{color:"var(--gold)",fontSize:13,flexShrink:0,textAlign:"center"}}>{a.xp} XP<div style={{fontSize:10,color:"var(--muted)"}}>{xpToScore(a.xp)} คะแนน</div></div>
+                  <button className="btn-ghost" onClick={()=>openEdit(a)} style={{padding:"7px 12px",fontSize:13,flexShrink:0}}>✏️ แก้ไข</button>
                   <button className="btn btn-cyan" onClick={()=>openCheck(a)} style={{padding:"8px 16px",fontSize:13,flexShrink:0}}>👁 ตรวจ</button>
                   <button className="btn btn-red" onClick={()=>del(a.id)} style={{padding:"7px 12px",fontSize:13,flexShrink:0}}>🗑</button>
                 </div>
@@ -2300,9 +2410,12 @@ function TeacherScores({students,setStudents}){
 function TeacherGrades({students,setStudents,assignments}){
   const [tabG,setTabG]=useState("score");
   const [maxPP,setMaxPP]=useState(20);
-  const [ppScores,setPpScores]=useState<any>(()=>{
-    const m:any={};students.forEach((s:any)=>{m[s.id]={pre:null,post:null};});return m;
-  });
+  // คะแนน pre/post-test เก็บตรงในตัวนักเรียนแต่ละคน (student.pretest/posttest) แล้วบันทึกทันทีที่แก้
+  // เพื่อให้รอดจากการสลับแท็บ/รีเฟรชหน้า เหมือนข้อมูลอื่นๆ ในระบบ (ไม่ใช่ state ชั่วคราวเหมือนเดิม)
+  function getPP(st:any){return{pre:st.pretest??null,post:st.posttest??null};}
+  function setPP(studentId:string,field:"pretest"|"posttest",value:number|null){
+    setStudents((prev:any)=>prev.map((s:any)=>s.id===studentId?{...s,[field]:value}:s));
+  }
   const [saved,setSaved]=useState(false);
   const [editMid,setEditMid]=useState<any>(()=>{
     const m:any={};students.forEach((s:any)=>{m[s.id]=s.midterm!==null&&s.midterm!==undefined?String(s.midterm):"";});return m;
@@ -2413,7 +2526,7 @@ function TeacherGrades({students,setStudents,assignments}){
       const keys=["g","m","w"];
       const pc=[0,0,0],qc=[0,0,0];
       students.forEach((st:any)=>{
-        const pp=ppScores[st.id]||{};
+        const pp=getPP(st);
         if(pp.pre!==null&&pp.pre!==undefined)pc[keys.indexOf(getPPGroup(pp.pre).key)]++;
         if(pp.post!==null&&pp.post!==undefined)qc[keys.indexOf(getPPGroup(pp.post).key)]++;
       });
@@ -2428,18 +2541,22 @@ function TeacherGrades({students,setStudents,assignments}){
           scales:{x:{grid:{display:false},ticks:{color:"#555"}},y:{beginAtZero:true,ticks:{stepSize:1,color:"#555"},max:students.length,grid:{color:"rgba(0,0,0,.06)"}}},
           animation:{onComplete:function(e:any){
             const ctx=e.chart.ctx;
-            ctx.font="bold 13px 'Share Tech Mono',monospace";
+            ctx.font="bold 12px 'Share Tech Mono',monospace";
             ctx.fillStyle="#333";ctx.textAlign="center";ctx.textBaseline="bottom";
+            const dsTotals=e.chart.data.datasets.map((ds:any)=>ds.data.reduce((s:number,v:number)=>s+v,0));
             e.chart.data.datasets.forEach(function(ds:any,di:number){
               e.chart.getDatasetMeta(di).data.forEach(function(bar:any,bi:number){
-                const v=ds.data[bi];if(v>0)ctx.fillText(v,bar.x,bar.y-4);
+                const v=ds.data[bi];
+                const total=dsTotals[di];
+                const pct=total>0?Math.round(v/total*100):0;
+                if(v>0)ctx.fillText(`${v} (${pct}%)`,bar.x,bar.y-4);
               });
             });
           }}
         }
       });
     }
-  },[tabG,students,editMid,editFinal,ppScores,maxPP]);
+  },[tabG,students,editMid,editFinal,maxPP]);
 
   const tabStyleG=(t:string)=>({
     background:tabG===t?"rgba(232,188,85,.12)":"transparent",
@@ -2450,10 +2567,10 @@ function TeacherGrades({students,setStudents,assignments}){
   } as React.CSSProperties);
 
   // ── Pre/Post summary calc ──
-  const ppStudents=students.filter((st:any)=>{const p=ppScores[st.id];return p&&p.pre!==null&&p.post!==null;});
+  const ppStudents=students.filter((st:any)=>{const p=getPP(st);return p&&p.pre!==null&&p.post!==null;});
   let ppUp=0,ppDown=0,ppSame=0;
   ppStudents.forEach((st:any)=>{
-    const p=ppScores[st.id];
+    const p=getPP(st);
     const pk=getPPGroup(p.pre).key,qk=getPPGroup(p.post).key;
     if(pk===qk)ppSame++;
     else if((pk==="w"&&qk!=="w")||(pk==="m"&&qk==="g"))ppUp++;
@@ -2603,7 +2720,7 @@ function TeacherGrades({students,setStudents,assignments}){
               </thead>
               <tbody>
                 {students.map((st:any)=>{
-                  const pp=ppScores[st.id]||{pre:null,post:null};
+                  const pp=getPP(st);
                   const pg=pp.pre!==null?getPPGroup(pp.pre):null;
                   const qg=pp.post!==null?getPPGroup(pp.post):null;
                   const same=pg&&qg&&pg.key===qg.key;
@@ -2618,7 +2735,7 @@ function TeacherGrades({students,setStudents,assignments}){
                         <div style={{display:"inline-flex",alignItems:"center",gap:6}}>
                           {pg&&<div style={{width:14,height:14,borderRadius:"50%",background:pg.bg,flexShrink:0}}></div>}
                           <input type="number" min={0} max={maxPP} value={pp.pre??""} placeholder="—"
-                            onChange={e=>{const v=e.target.value===""?null:Math.min(maxPP,Math.max(0,+e.target.value));setPpScores((p:any)=>({...p,[st.id]:{...p[st.id],pre:v}}));}}
+                            onChange={e=>{const v=e.target.value===""?null:Math.min(maxPP,Math.max(0,+e.target.value));setPP(st.id,"pretest",v);}}
                             style={{width:52,border:"1px solid #d1d5db",borderRadius:5,padding:"4px 6px",fontSize:13,textAlign:"center",color:"#222",background:"#fff",outline:"none"}}/>
                         </div>
                       </td>
@@ -2626,16 +2743,24 @@ function TeacherGrades({students,setStudents,assignments}){
                         <div style={{display:"inline-flex",alignItems:"center",gap:6}}>
                           {qg&&<div style={{width:14,height:14,borderRadius:"50%",background:qg.bg,flexShrink:0}}></div>}
                           <input type="number" min={0} max={maxPP} value={pp.post??""} placeholder="—"
-                            onChange={e=>{const v=e.target.value===""?null:Math.min(maxPP,Math.max(0,+e.target.value));setPpScores((p:any)=>({...p,[st.id]:{...p[st.id],post:v}}));}}
+                            onChange={e=>{const v=e.target.value===""?null:Math.min(maxPP,Math.max(0,+e.target.value));setPP(st.id,"posttest",v);}}
                             style={{width:52,border:"1px solid #d1d5db",borderRadius:5,padding:"4px 6px",fontSize:13,textAlign:"center",color:"#222",background:"#fff",outline:"none"}}/>
                         </div>
                       </td>
                       <td style={{padding:"8px",textAlign:"center"}}>
-                        {(pg&&qg)?<div style={{display:"inline-flex",alignItems:"center",justifyContent:"center",gap:8,background:abg,border:aborder,borderRadius:20,padding:"5px 14px"}}>
-                          <div style={{width:16,height:16,borderRadius:"50%",background:pg.bg}}></div>
-                          <span style={{fontSize:16,fontWeight:900,color:"#111",width:18,textAlign:"center",display:"inline-block"}}>{arr}</span>
-                          <div style={{width:16,height:16,borderRadius:"50%",background:qg.bg}}></div>
-                        </div>:<span style={{fontSize:11,color:"#999"}}>รอกรอก</span>}
+                        {(pg&&qg)?(()=>{
+                          const status=same?{label:"คงเดิม",c:"#9ca3af",bg:"#f3f4f6"}:up?{label:"ดีขึ้น",c:"#22c55e",bg:"#f0fdf4"}:{label:"ลดลง",c:"#ef4444",bg:"#fff1f2"};
+                          return(
+                            <div style={{display:"inline-flex",alignItems:"center",gap:8}}>
+                              <span style={{display:"inline-flex",alignItems:"center",gap:5}}>
+                                <span style={{width:8,height:8,borderRadius:"50%",background:pg.bg,display:"inline-block"}}></span>
+                                <span style={{width:14,height:1.5,background:"#d1d5db",display:"inline-block"}}></span>
+                                <span style={{width:8,height:8,borderRadius:"50%",background:qg.bg,display:"inline-block"}}></span>
+                              </span>
+                              <span style={{display:"inline-flex",alignItems:"center",borderLeft:`3px solid ${status.c}`,background:status.bg,borderRadius:"0 5px 5px 0",padding:"4px 10px",fontSize:12,color:"#333"}}>{status.label}</span>
+                            </div>
+                          );
+                        })():<span style={{fontSize:11,color:"#999"}}>รอกรอก</span>}
                       </td>
                     </tr>
                   );
@@ -2657,7 +2782,7 @@ function TeacherGrades({students,setStudents,assignments}){
               <div className="cond" style={{fontSize:18,color:"#333",marginBottom:14}}>สรุปการเปลี่ยนแปลง</div>
               <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
                 {[{arr:"⬆",ac:"#16a34a",bg:"#f0fdf4",border:"1px solid #bbf7d0",n:ppUp,label:"พัฒนา เลื่อนกลุ่มสูงขึ้น"},
-                  {arr:"→",ac:"#92400e",bg:"#fefce8",border:"1px solid #fde68a",n:ppSame,label:"อยู่กลุ่มเดิม"},
+                  {arr:"➡",ac:"#92400e",bg:"#fefce8",border:"1px solid #fde68a",n:ppSame,label:"อยู่กลุ่มเดิม"},
                   {arr:"⬇",ac:"#dc2626",bg:"#fff1f2",border:"1px solid #fecdd3",n:ppDown,label:"เลื่อนกลุ่มต่ำลง"},
                 ].map((r,i)=>(
                   <div key={i} style={{background:r.bg,border:r.border,borderRadius:8,padding:"10px 14px",display:"flex",alignItems:"center",gap:12}}>
@@ -2913,7 +3038,7 @@ function TeacherAirdrop({students,setPendingAirdrop,setStudents}){
 // ─────────────────────────────────────────────
 // GOOGLE APPS SCRIPT API — แก้ไขแล้ว
 // ─────────────────────────────────────────────
-const GAS_URL = "https://script.google.com/macros/s/AKfycbwtupEmRpb10monRLjykWA--xKFLHrk-s4cOvPuJbcpG6yH2l3d6ac68vn-3jjsX0G4WA/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwvO4vrGJ5GQJwoT6Fm0xKRlySQAcFRCIhsn53oP9Mfr5zXuzmaI3ShDeyFMyeqJz2JOQ/exec";
 
 async function gasGet(){
   try{
@@ -2938,6 +3063,44 @@ async function gasSave(action,data){
   }catch(e){
     console.error("gasSave error:",e);
   }
+}
+
+// ส่งงาน/ลบงานแบบปลอดภัยจากการชนกัน — เซิร์ฟเวอร์อ่านข้อมูลสดเองแล้วแก้ทีละคน ไม่ต้องส่งทั้ง array
+async function gasSubmitAssignment(payload){
+  try{
+    await fetch(GAS_URL,{
+      method:"POST",
+      mode:"no-cors",
+      headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:"submitAssignment",...payload})
+    });
+  }catch(e){
+    console.error("gasSubmitAssignment error:",e);
+  }
+}
+async function gasRemoveSubmission(payload){
+  try{
+    await fetch(GAS_URL,{
+      method:"POST",
+      mode:"no-cors",
+      headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:"removeSubmission",...payload})
+    });
+  }catch(e){
+    console.error("gasRemoveSubmission error:",e);
+  }
+}
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>{
+      const result=reader.result;
+      // result = "data:<mime>;base64,<data>" — ตัดเอาแค่ส่วน base64
+      resolve(result.split(",")[1]);
+    };
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 // ─────────────────────────────────────────────
@@ -2982,10 +3145,26 @@ export default function App(){
   const [resources,setResources]=useState(INIT_RESOURCES);
   const [auth,setAuth]=useState(null);
   const [loaded,setLoaded]=useState(false);
+  // dataLoadOk = true เฉพาะตอนที่ดึงข้อมูลนักเรียนจริงจาก Sheet มาได้สำเร็จอย่างน้อย 1 ครั้ง
+  // ป้องกันไม่ให้ auto-save เขียนทับ Sheet ด้วยข้อมูลเปล่า (INIT_STUDENTS) ตอนที่ดึงข้อมูลไม่สำเร็จ เช่น ปัญหา CORS/เน็ตหลุด
+  const [dataLoadOk,setDataLoadOk]=useState(false);
   const [maxXpSetting,setMaxXpSetting]=useState(2500);
   const [maxXpModal,setMaxXpModal]=useState(false);
   const [maxXpInput,setMaxXpInput]=useState("2500");
   const saveTimer=useRef<any>(null);
+  // ตั้งเป็น true เพื่อข้าม auto-save รอบถัดไป 1 ครั้ง — ใช้ตอนที่เพิ่งบันทึกผ่านช่องทางที่ปลอดภัยกว่าไปแล้ว (ส่ง/ลบงาน)
+  // กันไม่ให้ auto-save ทั่วไป (ที่ยังทับทั้ง array) มาเขียนทับซ้ำด้วยข้อมูลที่อาจไม่ทันอัปเดต
+  const skipAutoSaveRef=useRef(false);
+  function skipNextSave(){skipAutoSaveRef.current=true;}
+  // ดึงข้อมูลนักเรียนล่าสุดจาก Sheet มาซิงก์ใส่หน้าจอ — ใช้หลังส่ง/ลบงานผ่านช่องทางปลอดภัย
+  // เพื่อให้เห็นผลลัพธ์จริงที่เซิร์ฟเวอร์บันทึกไว้ (กันข้อมูลในเครื่องไม่ตรงกับของจริง)
+  async function refreshFromSheet(){
+    const data=await gasGet();
+    if(data&&data.students&&data.students.length>0){
+      skipAutoSaveRef.current=true; // การอัปเดตนี้คือการ "อ่าน" ไม่ใช่การเปลี่ยนแปลงใหม่ ไม่ต้อง save ซ้ำ
+      setStudents(data.students);
+    }
+  }
 
   // โหลดข้อมูลตอนเริ่ม
   useEffect(()=>{
@@ -2994,36 +3173,39 @@ export default function App(){
         if(data.students&&data.students.length>0)setStudents(data.students);
         if(data.assignments&&data.assignments.length>0)setAssignments(data.assignments);
         if(data.resources&&data.resources.length>0)setResources(data.resources);
+        setDataLoadOk(true); // ดึงข้อมูลจาก Sheet สำเร็จ (ไม่ว่าแต่ละอย่างจะว่างหรือไม่) ปลอดภัยที่จะเซฟกลับได้
       }
       setLoaded(true);
     });
   },[]);
 
   // debounce save — รอ 1 วินาทีหลังเปลี่ยนค่า
+  // ⚠️ เซฟกลับ Sheet ได้ก็ต่อเมื่อเคยดึงข้อมูลจริงสำเร็จแล้วเท่านั้น (dataLoadOk) กันข้อมูลหาย
   useEffect(()=>{
-    if(!loaded)return;
+    if(!loaded||!dataLoadOk)return;
     clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(async()=>{
+      if(skipAutoSaveRef.current){skipAutoSaveRef.current=false;return;}
       await gasSave("saveStudents",students);
       await syncStudentsToSheet(students,assignments);
     },1000);
-  },[students,loaded]);
+  },[students,loaded,dataLoadOk]);
 
   useEffect(()=>{
-    if(!loaded)return;
+    if(!loaded||!dataLoadOk)return;
     clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(()=>{
       gasSave("saveAssignments",assignments);
     },1000);
-  },[assignments,loaded]);
+  },[assignments,loaded,dataLoadOk]);
 
   useEffect(()=>{
-    if(!loaded)return;
+    if(!loaded||!dataLoadOk)return;
     clearTimeout(saveTimer.current);
     saveTimer.current=setTimeout(()=>{
       gasSave("saveResources",resources);
     },1000);
-  },[resources,loaded]);
+  },[resources,loaded,dataLoadOk]);
 
   const [page,setPage]=useState("dashboard");
   const [pendingAirdrop,setPendingAirdrop]=useState(null);
@@ -3095,8 +3277,16 @@ export default function App(){
         <TopNav user={navUser} role={role} page={page} setPage={setPage} onLogout={handleLogout}/>
         <main>
           <PageHeader page={page} setPage={setPage}/>
+          {loaded&&!dataLoadOk&&(
+            <div style={{margin:"0 20px 12px",padding:"12px 18px",background:"rgba(232,96,96,.14)",
+              border:"1px solid rgba(232,96,96,.45)",borderRadius:8,color:"var(--red)",fontSize:13,
+              display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:20}}>⚠️</span>
+              <span>เชื่อมต่อฐานข้อมูล (Google Sheets) ไม่สำเร็จ — ข้อมูลที่เห็นตอนนี้อาจไม่ใช่ข้อมูลล่าสุด และการเปลี่ยนแปลงในหน้านี้จะ<b>ยังไม่ถูกบันทึก</b> จนกว่าจะเชื่อมต่อสำเร็จ กรุณาลองรีเฟรชหน้าใหม่</span>
+            </div>
+          )}
           {role==="student"&&page==="dashboard"    &&currentStudent&&<StudentDashboard student={currentStudent} students={students} assignments={assignments} setPage={setPage} setStudents={setStudents}/>}
-          {role==="student"&&page==="assignments"  &&currentStudent&&<StudentAssignments student={currentStudent} students={students} assignments={assignments} setStudents={setStudents}/>}
+          {role==="student"&&page==="assignments"  &&currentStudent&&<StudentAssignments student={currentStudent} students={students} assignments={assignments} setStudents={setStudents} skipNextSave={skipNextSave} refreshFromSheet={refreshFromSheet}/>}
           {role==="student"&&page==="resources"    &&<StudentResources resources={resources}/>}
           {role==="student"&&page==="ranking"      &&<RankingPage students={students} myId={userId} isTeacher={false}/>}
           {role==="student"&&page==="inventory"    &&currentStudent&&<StudentInventory student={currentStudent}/>}
