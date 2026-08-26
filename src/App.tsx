@@ -299,22 +299,23 @@ function ProgressFlag({xp}){
   );
 }
 
-function Top3Card({students}){
-  const sorted=[...students].sort((a,b)=>b.xp-a.xp).slice(0,3);
+function Top3Card({students,assignments}){
+  const withEff=students.map((s:any)=>({s,eff:getEffectiveXP(s,assignments)}));
+  const sorted=withEff.sort((a,b)=>b.eff-a.eff).slice(0,3);
   const medals=["🥇","🥈","🥉"],mc=["#f5cc70","#c8c8c8","#cd7f32"];
   return(
     <div className="card card-gold" style={{marginBottom:16}}>
       <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:14}}>🏆 TOP 3</div>
       <div style={{display:"flex",gap:10}}>
-        {sorted.map((s,i)=>{const r=getRank(s.xp);return(
+        {sorted.map(({s,eff},i)=>{const r=getRank(eff);return(
           <div key={s.id} style={{flex:1,textAlign:"center",padding:"12px 8px",
             background:i===0?"rgba(232,188,85,.12)":"rgba(255,255,255,.05)",
             border:`1px solid ${i===0?"rgba(232,188,85,.4)":"var(--border)"}`,borderRadius:8}}>
             <div style={{fontSize:24}}>{medals[i]}</div>
             <div style={{fontSize:30,margin:"4px 0"}}>{s.avatar}</div>
             <div style={{fontSize:12,color:"#fff",fontWeight:600,lineHeight:1.3}}>{s.name.split(" ").slice(1).join(" ")}</div>
-            <div className="mono" style={{fontSize:16,fontWeight:700,color:mc[i],marginTop:4}}>{s.xp.toLocaleString()}</div>
-            <div style={{fontSize:10,color:"var(--muted)"}}>XP</div>
+            <div className="mono" style={{fontSize:16,fontWeight:700,color:mc[i],marginTop:4}}>{eff.toLocaleString()}</div>
+            <div style={{fontSize:10,color:"var(--muted)"}}>XP ({xpToScore(eff)} คะแนน)</div>
             <div className="badge" style={{marginTop:8,background:`${r.color}20`,border:`1px solid ${r.color}50`,color:r.color,fontSize:9,lineHeight:1.5}}>{r.icon} {r.label}</div>
           </div>
         );})}
@@ -591,7 +592,7 @@ function LoginScreen({students,onLogin}){
 // ─────────────────────────────────────────────
 // TOP NAV
 // ─────────────────────────────────────────────
-function TopNav({user,role,page,setPage,onLogout}){
+function TopNav({user,role,page,setPage,onLogout,assignments}){
   const sTabs=[{id:"dashboard",label:"DASHBOARD"},{id:"resources",label:"บทเรียน"},{id:"assignments",label:"ส่งงาน"},{id:"ranking",label:"TOP 3"},{id:"inventory",label:"AIRDROP"},{id:"settings",label:"ตั้งค่า"}];
   const tTabs=[{id:"overview",label:"OVERVIEW"},{id:"students",label:"STUDENTS"},{id:"t-assignments",label:"📋 งาน"},{id:"t-resources",label:"📁 ไฟล์"},{id:"t-scores",label:"⭐ XP"},{id:"t-exam",label:"📝 สอบ"},{id:"t-grades",label:"📊 คะแนน"},{id:"t-airdrop",label:"📦 AIRDROP"},{id:"ranking",label:"RANKING"}];
   const tabs=role==="teacher"?tTabs:sTabs;
@@ -614,7 +615,7 @@ function TopNav({user,role,page,setPage,onLogout}){
           <span style={{fontSize:22}}>{user?.avatar||"👩‍✈️"}</span>
           <div style={{lineHeight:1.3}}>
             <div style={{fontSize:12,color:"var(--text)",maxWidth:100,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user?.name||"Commander"}</div>
-            <div className="mono" style={{fontSize:9,color:"var(--muted)"}}>{role==="teacher"?"COMMANDER":getRank(user?.xp||0).label}</div>
+            <div className="mono" style={{fontSize:9,color:"var(--muted)"}}>{role==="teacher"?"COMMANDER":getRank(getEffectiveXP(user,assignments)).label}</div>
           </div>
           <button className="btn-outline" onClick={onLogout} style={{padding:"6px 14px",fontSize:11}}>OUT</button>
         </div>
@@ -693,9 +694,11 @@ function ScoreBreakdown({student, assignments}){
     {label:"เก็บ หลังกลางภาค",w:35,bg:"#f9a8d4",txt:"#500724",cbg:"rgba(249,168,212,.12)",cbr:"rgba(249,168,212,.35)",bar:"#f472b6",score:score2,max:MAX_HALF,pct:pct2,ok:true},
     {label:"สอบปลายภาค",w:15,bg:"#fde68a",txt:"#451a03",cbg:"rgba(253,230,138,.08)",cbr:"rgba(253,230,138,.3)",bar:"#fbbf24",score:scoreFinal,max:MAX_FINAL,pct:null,ok:scoreFinal!==null},
   ];
+  const xpAnnounced=(score1+score2+(scoreMid!==null?scoreMid:0)+(scoreFinal!==null?scoreFinal:0))*25;
+  const xpMaxAnnounced=maxAnnounced*25;
   return(
     <div className="card" style={{marginBottom:16}}>
-      <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:10}}>📊 สัดส่วนคะแนน 100 คะแนน</div>
+      <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:10}}>📊 สัดส่วนคะแนน 2,500 XP (100 คะแนน)</div>
       <div style={{display:"flex",borderRadius:10,overflow:"hidden",height:30,marginBottom:10,gap:2}}>
         {segs.map((s,i)=>(
           <div key={i} style={{width:`${s.w}%`,background:s.bg,display:"flex",alignItems:"center",
@@ -711,17 +714,20 @@ function ScoreBreakdown({student, assignments}){
               <div style={{width:`${s.ok&&s.pct!==null?s.pct:0}%`,height:"100%",background:s.bar,borderRadius:4,transition:"width .6s"}}/>
             </div>
             {s.ok&&s.score!==null
-              ?<div style={{display:"flex",justifyContent:"space-between",fontSize:12}}>
-                  <span style={{color:"var(--text)",fontWeight:600}}>{s.score}/{s.max}</span>
-                  <span style={{color:s.bg,fontSize:11}}>{s.pct}%</span>
-                </div>
-              :<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>ยังไม่ประกาศ</div>}
+              ?<>
+                  <div style={{fontSize:12,color:"var(--text)",fontWeight:600,fontFamily:"'Share Tech Mono',monospace"}}>{s.score*25} XP ({s.score} คะแนน)</div>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--muted)",marginTop:1}}>
+                    <span>เต็ม {s.max*25} XP ({s.max} คะแนน)</span>
+                    <span style={{color:s.bg}}>{s.pct}%</span>
+                  </div>
+                </>
+              :<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>ยังไม่ประกาศ (เต็ม {s.max*25} XP / {s.max} คะแนน)</div>}
           </div>
         ))}
       </div>
       <div style={{background:"rgba(232,188,85,.09)",border:"0.5px solid rgba(232,188,85,.28)",borderRadius:8,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div style={{fontSize:13,color:"var(--muted2)"}}>คะแนนรวมที่ประกาศแล้ว</div>
-        <div><span style={{fontSize:22,fontWeight:700,color:"var(--gold2)"}}>{totalAnnounced}</span><span style={{fontSize:12,color:"var(--muted)"}}> / {maxAnnounced} คะแนน</span></div>
+        <div><span style={{fontSize:22,fontWeight:700,color:"var(--gold2)"}}>{xpAnnounced.toLocaleString()} XP</span><span style={{fontSize:12,color:"var(--muted)"}}> ({totalAnnounced} คะแนน) / {xpMaxAnnounced.toLocaleString()} XP ({maxAnnounced} คะแนน)</span></div>
       </div>
       {tip()&&<div style={{background:"rgba(251,191,36,.09)",border:"0.5px solid rgba(251,191,36,.35)",borderRadius:8,padding:"9px 14px",fontSize:12,color:"#fbbf24",marginTop:8}}>{tip()}</div>}
     </div>
@@ -732,7 +738,8 @@ function ScoreBreakdown({student, assignments}){
 // STUDENT: DASHBOARD
 // ─────────────────────────────────────────────
 function StudentDashboard({student,students,assignments,setPage,setStudents}){
-  const rank=getRank(student.xp);
+  const effXP=getEffectiveXP(student,assignments);
+  const rank=getRank(effXP);
   const submitted=Object.keys(student.submissions||{}).length;
   const [pwModal,setPwModal]=useState(false);
   const [oldPw,setOldPw]=useState("");const [newPw,setNewPw]=useState("");const [cnf,setCnf]=useState("");const [pwMsg,setPwMsg]=useState(null);
@@ -776,21 +783,21 @@ function StudentDashboard({student,students,assignments,setPage,setStudents}){
               <span className="badge" style={{background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.4)",color:"var(--green)"}}>✓ {submitted}/{assignments.length} งาน</span>
             </div>
           </div>
-          <GradeTag xp={student.xp} big={true}/>
+          <GradeTag xp={effXP} big={true}/>
         </div>
         <div style={{marginTop:20}}>
           <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,marginBottom:8}}>PROGRESS TO VICTORY</div>
-          <ProgressFlag xp={student.xp}/>
-          <div style={{marginTop:12}}><XPBar xp={student.xp}/></div>
+          <ProgressFlag xp={effXP}/>
+          <div style={{marginTop:12}}><XPBar xp={effXP}/></div>
         </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
-        <Top3Card students={students}/>
+        <Top3Card students={students} assignments={assignments}/>
         <div>
           <div className="card" style={{marginBottom:10,textAlign:"center",padding:14}}>
             <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,marginBottom:6}}>YOUR XP</div>
-            <div className="cond" style={{fontSize:48,fontWeight:900,color:rank.color,lineHeight:1}}>{student.xp.toLocaleString()}</div>
-            <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>XP สะสมในเทอมนี้</div>
+            <div className="cond" style={{fontSize:48,fontWeight:900,color:rank.color,lineHeight:1}}>{effXP.toLocaleString()}</div>
+            <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>{xpToScore(effXP)} คะแนน จาก 2,500 XP (100 คะแนน)</div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
             <div className="card" style={{textAlign:"center",padding:12}}><div style={{fontSize:22,marginBottom:4}}>📋</div><div className="cond" style={{fontSize:28,fontWeight:700,color:"var(--cyan)"}}>{submitted}</div><div style={{fontSize:11,color:"var(--muted)"}}>ส่งแล้ว</div></div>
@@ -808,6 +815,22 @@ function StudentDashboard({student,students,assignments,setPage,setStudents}){
 // STUDENT: ASSIGNMENTS
 // ─────────────────────────────────────────────
 function xpToScore(xp){return Math.round((xp||0)/25);}
+
+// ── XP รวมที่ "ใช้จริง" สำหรับ Rank/แถบ XP/Leaderboard ──
+// ครอบเพดานตามสัดส่วนคะแนน 100: ก่อนกลางภาค 875(35คะแนน) + กลางภาค 375(15) + หลังกลางภาค 875(35) + ปลายภาค 375(15) = 2500
+// ต่างจาก student.xp (ยอดสะสมดิบ ไม่มีเพดาน) ซึ่งยังใช้เป็นฐานคำนวณ/ปรับแก้แยกต่างหาก
+function getEffectiveXP(student,assignments){
+  if(!student)return 0;
+  const before=(assignments||[]).filter((a:any)=>(a.phase||"before")==="before");
+  const after=(assignments||[]).filter((a:any)=>(a.phase||"before")==="after");
+  function earnedXP(list:any){return list.reduce((s:number,a:any)=>{const sub=student.submissions?.[a.id];return s+(sub?.graded?sub.xpEarned||0:0);},0);}
+  const logXP=(phase:string)=>(student.xpLog||[]).reduce((s:number,l:any)=>(l.phase||"before")===phase?s+(l.xp||0):s,0);
+  const beforeXP=Math.min(earnedXP(before)+logXP("before"),875);
+  const afterXP=Math.min(earnedXP(after)+logXP("after"),875);
+  const midXP=(student.midterm!==null&&student.midterm!==undefined)?Math.min(student.midterm*25,375):0;
+  const finalXP=(student.final!==null&&student.final!==undefined)?Math.min(student.final*25,375):0;
+  return beforeXP+midXP+afterXP+finalXP;
+}
 
 function StudentAssignments({student,students,assignments,setStudents,skipNextSave,refreshFromSheet}){
   const [uploadModal,setUploadModal]=useState(null);
@@ -1047,8 +1070,9 @@ function StudentResources({resources}){
 // ─────────────────────────────────────────────
 // STUDENT: RANKING — เห็นแค่ TOP 3
 // ─────────────────────────────────────────────
-function RankingPage({students,myId,isTeacher=false}){
-  const sorted=[...students].sort((a,b)=>b.xp-a.xp);
+function RankingPage({students,myId,isTeacher=false,assignments}){
+  const eff=(s:any)=>getEffectiveXP(s,assignments);
+  const sorted=[...students].sort((a,b)=>eff(b)-eff(a));
   const medals=["🥇","🥈","🥉"],mc=["#f5cc70","#c8c8c8","#cd7f32"];
   const myRank=sorted.findIndex(s=>s.id===myId)+1;
   const mySelf=sorted.find(s=>s.id===myId);
@@ -1059,7 +1083,7 @@ function RankingPage({students,myId,isTeacher=false}){
     return(
       <div className="fade-up" style={{padding:20,maxWidth:700,margin:"0 auto"}}>
         <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:20}}>🏆 TOP 3 LEADERBOARD</div>
-        {top3.map((s,i)=>{const r=getRank(s.xp);const isMe=s.id===myId;return(
+        {top3.map((s,i)=>{const sxp=eff(s);const r=getRank(sxp);const isMe=s.id===myId;return(
           <div key={s.id} className="card slide-r" style={{display:"flex",alignItems:"center",gap:16,marginBottom:12,
             borderColor:isMe?"rgba(232,188,85,.6)":i===0?"rgba(232,188,85,.28)":"var(--border)",
             background:isMe?"rgba(232,188,85,.07)":"var(--bg2)",animationDelay:`${i*.1}s`,
@@ -1071,12 +1095,12 @@ function RankingPage({students,myId,isTeacher=false}){
                 <span style={{fontSize:16,fontWeight:600,color:isMe?"var(--gold)":"#fff"}}>{s.name}</span>
                 {isMe&&<span className="badge" style={{background:"rgba(232,188,85,.18)",border:"1px solid rgba(232,188,85,.45)",color:"var(--gold)"}}>YOU</span>}
               </div>
-              <div style={{maxWidth:280}}><XPBar xp={s.xp} showLabel={false}/></div>
+              <div style={{maxWidth:280}}><XPBar xp={sxp} showLabel={false}/></div>
             </div>
             <div style={{textAlign:"center"}}>
-              <div className="cond" style={{fontSize:34,fontWeight:900,color:mc[i]}}>{s.xp.toLocaleString()}</div>
-              <div style={{fontSize:10,color:"var(--muted)"}}>XP</div>
-              <GradeTag xp={s.xp}/>
+              <div className="cond" style={{fontSize:34,fontWeight:900,color:mc[i]}}>{sxp.toLocaleString()}</div>
+              <div style={{fontSize:10,color:"var(--muted)"}}>XP ({xpToScore(sxp)} คะแนน)</div>
+              <GradeTag xp={sxp}/>
             </div>
           </div>
         );})}
@@ -1094,16 +1118,16 @@ function RankingPage({students,myId,isTeacher=false}){
               <div style={{fontSize:40}}>{mySelf.avatar}</div>
               <div style={{flex:1}}>
                 <div style={{fontSize:16,fontWeight:600,color:"var(--gold)",marginBottom:6}}>{mySelf.name}</div>
-                <div style={{maxWidth:280}}><XPBar xp={mySelf.xp} showLabel={false}/></div>
+                <div style={{maxWidth:280}}><XPBar xp={eff(mySelf)} showLabel={false}/></div>
               </div>
               <div style={{textAlign:"center"}}>
-                <div className="cond" style={{fontSize:32,fontWeight:900,color:"var(--gold)"}}>{mySelf.xp.toLocaleString()}</div>
-                <div style={{fontSize:10,color:"var(--muted)"}}>XP</div>
-                <GradeTag xp={mySelf.xp}/>
+                <div className="cond" style={{fontSize:32,fontWeight:900,color:"var(--gold)"}}>{eff(mySelf).toLocaleString()}</div>
+                <div style={{fontSize:10,color:"var(--muted)"}}>XP ({xpToScore(eff(mySelf))} คะแนน)</div>
+                <GradeTag xp={eff(mySelf)}/>
               </div>
             </div>
             <div style={{textAlign:"center",marginTop:12,fontSize:13,color:"var(--muted)"}}>
-              ห่างจากอันดับ 3 อีก <span style={{color:"var(--gold)",fontWeight:700}}>{(sorted[2]?.xp||0)-mySelf.xp} XP</span>
+              ห่างจากอันดับ 3 อีก <span style={{color:"var(--gold)",fontWeight:700}}>{(eff(sorted[2])||0)-eff(mySelf)} XP</span>
             </div>
           </div>
         )}
@@ -1115,19 +1139,19 @@ function RankingPage({students,myId,isTeacher=false}){
   return(
     <div className="fade-up" style={{padding:20,maxWidth:900,margin:"0 auto"}}>
       <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:20}}>FULL LEADERBOARD</div>
-      {sorted.map((s,i)=>{const r=getRank(s.xp);return(
+      {sorted.map((s,i)=>{const sxp=eff(s);const r=getRank(sxp);return(
         <div key={s.id} className="card slide-r" style={{display:"flex",alignItems:"center",gap:16,marginBottom:10,
           borderColor:i===0?"rgba(232,188,85,.28)":"var(--border)",animationDelay:`${i*.04}s`}}>
           <div style={{width:44,textAlign:"center"}}>{i<3?<span style={{fontSize:26}}>{medals[i]}</span>:<span className="mono" style={{fontSize:20,color:"var(--muted)"}}>#{i+1}</span>}</div>
           <div style={{fontSize:36}}>{s.avatar}</div>
           <div style={{flex:1,minWidth:0}}>
             <div style={{fontSize:15,fontWeight:600,color:"#fff",marginBottom:6}}>{s.name}</div>
-            <div style={{maxWidth:300}}><XPBar xp={s.xp} showLabel={false}/></div>
+            <div style={{maxWidth:300}}><XPBar xp={sxp} showLabel={false}/></div>
           </div>
           <div style={{textAlign:"center"}}>
-            <div className="cond" style={{fontSize:32,fontWeight:900,color:r.color}}>{s.xp.toLocaleString()}</div>
-            <div style={{fontSize:10,color:"var(--muted)"}}>XP</div>
-            <GradeTag xp={s.xp}/>
+            <div className="cond" style={{fontSize:32,fontWeight:900,color:r.color}}>{sxp.toLocaleString()}</div>
+            <div style={{fontSize:10,color:"var(--muted)"}}>XP ({xpToScore(sxp)} คะแนน)</div>
+            <GradeTag xp={sxp}/>
           </div>
         </div>
       );})}
@@ -1208,7 +1232,7 @@ function TeacherExamScores({students,setStudents}){
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
         <div className="card" style={{borderColor:"rgba(147,197,253,.55)"}}>
           <div className="cond" style={{fontSize:18,color:"#93c5fd",letterSpacing:2,marginBottom:4}}>🔵 สอบกลางภาค</div>
-          <div className="mono" style={{fontSize:10,color:"var(--muted)",marginBottom:14}}>คะแนนเต็ม 15 คะแนน</div>
+          <div className="mono" style={{fontSize:10,color:"var(--muted)",marginBottom:14}}>คะแนนเต็ม 15 คะแนน (375 XP)</div>
           {students.map(s=>(
             <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
               <span style={{fontSize:20,flexShrink:0}}>{s.avatar}</span>
@@ -1216,13 +1240,13 @@ function TeacherExamScores({students,setStudents}){
               <input type="number" min="0" max="15" value={midScores[s.id]||""} placeholder="—"
                 onChange={e=>setMidScores(p=>({...p,[s.id]:e.target.value}))}
                 style={{width:60,background:"rgba(14,26,43,.8)",border:"1px solid var(--border2)",color:"#93c5fd",borderRadius:5,padding:"6px 8px",fontFamily:"'Share Tech Mono',monospace",fontSize:15,textAlign:"center",outline:"none"}}/>
-              <span style={{fontSize:11,color:"var(--muted)",flexShrink:0}}>/15</span>
+              <span style={{fontSize:11,color:"var(--muted)",flexShrink:0,width:64}}>/15 ({midScores[s.id]?Number(midScores[s.id])*25:0} XP)</span>
             </div>
           ))}
         </div>
         <div className="card" style={{borderColor:"rgba(253,230,138,.55)"}}>
           <div className="cond" style={{fontSize:18,color:"#fde68a",letterSpacing:2,marginBottom:4}}>🟡 สอบปลายภาค</div>
-          <div className="mono" style={{fontSize:10,color:"var(--muted)",marginBottom:14}}>คะแนนเต็ม 15 คะแนน</div>
+          <div className="mono" style={{fontSize:10,color:"var(--muted)",marginBottom:14}}>คะแนนเต็ม 15 คะแนน (375 XP)</div>
           {students.map(s=>(
             <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
               <span style={{fontSize:20,flexShrink:0}}>{s.avatar}</span>
@@ -1230,7 +1254,7 @@ function TeacherExamScores({students,setStudents}){
               <input type="number" min="0" max="15" value={finalScores[s.id]||""} placeholder="—"
                 onChange={e=>setFinalScores(p=>({...p,[s.id]:e.target.value}))}
                 style={{width:60,background:"rgba(14,26,43,.8)",border:"1px solid var(--border2)",color:"#fde68a",borderRadius:5,padding:"6px 8px",fontFamily:"'Share Tech Mono',monospace",fontSize:15,textAlign:"center",outline:"none"}}/>
-              <span style={{fontSize:11,color:"var(--muted)",flexShrink:0}}>/15</span>
+              <span style={{fontSize:11,color:"var(--muted)",flexShrink:0,width:64}}>/15 ({finalScores[s.id]?Number(finalScores[s.id])*25:0} XP)</span>
             </div>
           ))}
         </div>
@@ -1254,16 +1278,16 @@ function useChartJS(){
   },[]);
 }
 
-function GradeChart({students}){
+function GradeChart({students,assignments}){
   useChartJS();
   const chartRef=useRef<any>(null),pieRef=useRef(null);
   const barInst=useRef<any>(null),pieInst=useRef(null);
   const gradeMap={"4":0,"3.5":0,"3":0,"2.5":0,"2":0,"1.5":0,"1":0,"0":0};
-  students.forEach(s=>{const r=getRank(s.xp);if(r.grade in gradeMap)gradeMap[r.grade]++;});
+  students.forEach(s=>{const r=getRank(getEffectiveXP(s,assignments));if(r.grade in gradeMap)gradeMap[r.grade]++;});
   const labels=Object.keys(gradeMap),data=Object.values(gradeMap);
   const colors=["#a78bfa","#818cf8","#60a5fa","#f472b6","#34d399","#fbbf24","#fb923c","#f87171"];
   const total=students.length;
-  const passing=students.filter(s=>getRank(s.xp).grade!=="0").length;
+  const passing=students.filter(s=>getRank(getEffectiveXP(s,assignments)).grade!=="0").length;
   useEffect(()=>{
     if(typeof Chart==="undefined"||!chartRef.current)return;
     if(barInst.current)barInst.current.destroy();
@@ -1303,8 +1327,8 @@ function GradeChart({students}){
 // TEACHER: OVERVIEW
 // ─────────────────────────────────────────────
 function TeacherOverview({students,assignments,setPage,maxXp,onEditMaxXp}:any){
-  const avgXP=Math.round(students.reduce((a,s)=>a+s.xp,0)/students.length);
-  const passing=students.filter(s=>parseFloat(getRank(s.xp).grade)>0).length;
+  const avgXP=Math.round(students.reduce((a,s)=>a+getEffectiveXP(s,assignments),0)/students.length);
+  const passing=students.filter(s=>parseFloat(getRank(getEffectiveXP(s,assignments)).grade)>0).length;
   return(
     <div className="fade-up" style={{padding:20,maxWidth:1000,margin:"0 auto"}}>
       <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:16}}>COMMANDER OVERVIEW</div>
@@ -1350,8 +1374,8 @@ function TeacherOverview({students,assignments,setPage,maxXp,onEditMaxXp}:any){
           </div>
         ))}
       </div>
-      <GradeChart students={students}/>
-      <Top3Card students={students}/>
+      <GradeChart students={students} assignments={assignments}/>
+      <Top3Card students={students} assignments={assignments}/>
     </div>
   );
 }
@@ -1578,12 +1602,18 @@ function TeacherStudents({students,assignments,setStudents}){
         <div style={{display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
           <div style={{fontSize:52}}>{s.avatar}</div>
           <div style={{flex:1}}><div className="cond" style={{fontSize:28,fontWeight:700,color:"#fff"}}>{s.name}</div></div>
-          <GradeTag xp={s.xp} big={true}/>
-          <button className="btn-ghost" onClick={()=>{setNewXp(String(s.xp));setEditXpModal(true);}} style={{fontSize:12,padding:"7px 14px",borderColor:"rgba(232,96,96,.4)",color:"var(--red)"}}>✏️ แก้ XP</button>
-          <button className="btn-ghost" onClick={()=>recalcXp(s)} style={{fontSize:12,padding:"7px 14px",borderColor:"rgba(234,179,8,.4)",color:"#eab308"}}>🔄 คำนวณใหม่</button>
+          <GradeTag xp={getEffectiveXP(s,assignments)} big={true}/>
         </div>
-        <div style={{marginTop:16}}><XPBar xp={s.xp}/></div>
-        <div style={{marginTop:10}}><ProgressFlag xp={s.xp}/></div>
+        <div style={{marginTop:16}}><XPBar xp={getEffectiveXP(s,assignments)}/></div>
+        <div style={{marginTop:10}}><ProgressFlag xp={getEffectiveXP(s,assignments)}/></div>
+        <div style={{marginTop:14,padding:"10px 14px",background:"rgba(234,179,8,.06)",border:"1px solid rgba(234,179,8,.2)",borderRadius:8,display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+          <div style={{flex:1,minWidth:180}}>
+            <div className="mono" style={{fontSize:9,color:"var(--muted)",letterSpacing:1}}>XP สะสมดิบ (คนละส่วนกับ Rank ด้านบน)</div>
+            <div className="mono" style={{fontSize:15,color:"#eab308",fontWeight:700}}>{s.xp.toLocaleString()} XP</div>
+          </div>
+          <button className="btn-ghost" onClick={()=>{setNewXp(String(s.xp));setEditXpModal(true);}} style={{fontSize:12,padding:"7px 14px",borderColor:"rgba(232,96,96,.4)",color:"var(--red)"}}>✏️ แก้ XP ดิบ</button>
+          <button className="btn-ghost" onClick={()=>recalcXp(s)} style={{fontSize:12,padding:"7px 14px",borderColor:"rgba(234,179,8,.4)",color:"#eab308"}}>🔄 คำนวณดิบใหม่</button>
+        </div>
       </div>
       <div className="card" style={{marginBottom:16}}>
         <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,marginBottom:14}}>SUBMISSION STATUS</div>
@@ -1710,7 +1740,8 @@ function TeacherStudents({students,assignments,setStudents}){
           🔄 คำนวณ XP ใหม่ทั้งห้อง
         </button>
       </div>
-      {[...students].sort((a:any,b:any)=>b.xp-a.xp).map((s:any,i:number)=>{const r=getRank(s.xp);
+      {[...students].sort((a:any,b:any)=>getEffectiveXP(b,assignments)-getEffectiveXP(a,assignments)).map((s:any,i:number)=>{
+        const sxp=getEffectiveXP(s,assignments);const r=getRank(sxp);
         const correct=calcCorrectXp(s);
         const hasError=correct!==s.xp;
         return(
@@ -1722,13 +1753,13 @@ function TeacherStudents({students,assignments,setStudents}){
               <div style={{fontSize:15,fontWeight:600,color:"#fff"}}>{s.name}</div>
               {hasError&&<span style={{fontSize:10,background:"rgba(239,68,68,.2)",border:"1px solid rgba(239,68,68,.4)",
                 color:"#ef4444",padding:"2px 7px",borderRadius:4,fontFamily:"'Share Tech Mono',monospace"}}>
-                ⚠ XP ไม่ตรง (ควรเป็น {correct})
+                ⚠ XP ดิบไม่ตรง (ควรเป็น {correct})
               </span>}
             </div>
-            <div style={{maxWidth:280}}><XPBar xp={s.xp} showLabel={false}/></div>
+            <div style={{maxWidth:280}}><XPBar xp={sxp} showLabel={false}/></div>
           </div>
-          <div className="mono" style={{fontSize:20,color:hasError?"#ef4444":r.color}}>{s.xp.toLocaleString()}</div>
-          <GradeTag xp={s.xp}/>
+          <div className="mono" style={{fontSize:20,color:hasError?"#ef4444":r.color}}>{sxp.toLocaleString()}</div>
+          <GradeTag xp={sxp}/>
           {hasError&&<button className="btn-ghost" onClick={e=>{e.stopPropagation();recalcXp(s);}}
             style={{fontSize:11,padding:"6px 12px",borderColor:"rgba(234,179,8,.4)",color:"#eab308",flexShrink:0}}>
             🔄 แก้
@@ -1762,18 +1793,22 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents}){
 
   // ── แก้ไขใบงานที่ลงไปแล้ว (ชื่อ/คะแนนเต็ม/กำหนดส่ง/รายละเอียด/ประเภท) ──
   const [editModal,setEditModal]=useState(null);
-  const [editForm,setEditForm]=useState({chapterId:"CH1",title:"",xp:200,due:"",desc:"",type:"worksheet"});
-  function openEdit(a){setEditModal(a);setEditForm({chapterId:a.chapterId,title:a.title,xp:a.xp,due:a.due,desc:a.desc,type:a.type});}
+  const [editForm,setEditForm]=useState({chapterId:"CH1",title:"",xp:200,due:"",desc:"",type:"worksheet",unit:"xp"});
+  function openEdit(a){setEditModal(a);setEditForm({chapterId:a.chapterId,title:a.title,xp:a.xp,due:a.due,desc:a.desc,type:a.type,unit:"xp"});}
   function saveEdit(){
     if(!editModal||!editForm.title.trim())return;
     const newXp=Number(editForm.xp)||0;
-    setAssignments(prev=>prev.map(a=>a.id===editModal.id?{...a,...editForm,xp:newXp}:a));
-    // ถ้าลดคะแนนเต็มลงจนต่ำกว่าที่บางคนได้ไปแล้ว ให้ปรับคะแนนที่ได้ลงมาไม่ให้เกินเต็มใหม่
+    if(newXp<=0)return;
+    const oldXp=editModal.xp||1;
+    setAssignments(prev=>prev.map(a=>a.id===editModal.id?{...a,title:editForm.title,due:editForm.due,desc:editForm.desc,type:editForm.type,chapterId:editForm.chapterId,xp:newXp}:a));
+    // ปรับคะแนนทุกคนที่ได้ไปแล้วตามสัดส่วนใหม่อัตโนมัติ (ไม่ใช่แค่ตัดคนที่ได้เกิน)
     setStudents((prev:any)=>prev.map((s:any)=>{
       const sub=s.submissions?.[editModal.id];
-      if(!sub||!sub.graded||(sub.xpEarned||0)<=newXp)return s;
-      const diff=newXp-(sub.xpEarned||0); // ค่าติดลบ
-      return{...s,xp:s.xp+diff,submissions:{...s.submissions,[editModal.id]:{...sub,xpEarned:newXp,maxXp:newXp}}};
+      if(!sub||!sub.graded)return s;
+      const oldEarned=sub.xpEarned||0;
+      const newEarned=Math.round(oldEarned/oldXp*newXp);
+      const diff=newEarned-oldEarned;
+      return{...s,xp:s.xp+diff,submissions:{...s.submissions,[editModal.id]:{...sub,xpEarned:newEarned,maxXp:newXp}}};
     }));
     setEditModal(null);
   }
@@ -1883,12 +1918,30 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents}){
         <div className="overlay">
           <div className="card card-gold" style={{width:"100%",maxWidth:500}}>
             <div className="cond" style={{fontSize:24,color:"var(--gold)",letterSpacing:2,marginBottom:20}}>✏️ แก้ไขงาน</div>
-            {[["ชื่องาน","title","text"],["XP เต็ม","xp","number"],["วันครบกำหนด","due","text"],["รายละเอียด","desc","text"]].map(([l,k,t])=>(
+            {[["ชื่องาน","title","text"],["วันครบกำหนด","due","text"],["รายละเอียด","desc","text"]].map(([l,k,t])=>(
               <div key={k} style={{marginBottom:14}}>
                 <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:7}}>{l.toUpperCase()}</label>
                 <input className="input" type={t} value={(editForm as any)[k]} onChange={e=>setEditForm(p=>({...p,[k]:e.target.value}))} placeholder={l}/>
               </div>
             ))}
+            <div style={{marginBottom:14}}>
+              <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:7}}>คะแนนเต็ม</label>
+              <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:8}}>
+                <input className="input" type="number" min="1"
+                  value={editForm.unit==="xp"?editForm.xp:xpToScore(editForm.xp)}
+                  onChange={e=>{const v=Number(e.target.value)||0;setEditForm(p=>({...p,xp:p.unit==="xp"?v:v*25}));}}/>
+                <div style={{display:"flex",gap:4}}>
+                  {[["xp","XP"],["points","คะแนน"]].map(([u,l])=>(
+                    <button key={u} type="button" onClick={()=>setEditForm(p=>({...p,unit:u}))}
+                      style={{background:editForm.unit===u?"rgba(232,188,85,.18)":"rgba(255,255,255,.05)",
+                        border:`1px solid ${editForm.unit===u?"rgba(232,188,85,.6)":"var(--border)"}`,
+                        color:editForm.unit===u?"var(--gold)":"var(--muted2)",borderRadius:6,padding:"0 12px",
+                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12}}>{l}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{fontSize:11,color:"var(--muted)",marginTop:6}}>= {editForm.xp} XP ({xpToScore(editForm.xp)} คะแนน)</div>
+            </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
               <div><label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:7}}>บทเรียน</label>
                 <select className="input" value={editForm.chapterId} onChange={e=>setEditForm(p=>({...p,chapterId:e.target.value}))}>
@@ -1902,7 +1955,7 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents}){
               </div>
             </div>
             <div style={{fontSize:11,color:"#eab308",marginBottom:16,padding:"8px 12px",background:"rgba(234,179,8,.1)",borderRadius:6}}>
-              💡 ถ้าลด XP เต็มลงต่ำกว่าที่บางคนได้ไปแล้ว ระบบจะปรับคะแนนคนนั้นลงมาไม่ให้เกินเต็มใหม่อัตโนมัติ
+              💡 คะแนนที่นักเรียนได้ไปแล้วทุกคน จะถูกปรับสัดส่วนใหม่ให้อัตโนมัติตามคะแนนเต็มใหม่นี้
             </div>
             <div style={{display:"flex",gap:10}}>
               <button className="btn btn-gold" onClick={saveEdit} style={{flex:1,fontSize:16,padding:13}}>💾 บันทึก</button>
@@ -2114,7 +2167,7 @@ function TeacherResources({resources,setResources}){
 // ─────────────────────────────────────────────
 // TEACHER: XP MANAGEMENT (อัปเกรด)
 // ─────────────────────────────────────────────
-function TeacherScores({students,setStudents}){
+function TeacherScores({students,setStudents,assignments}){
   const [tab,setTab]=useState("add");
   const [maxXpAmt,setMaxXpAmt]=useState(""); // XP เต็มของกิจกรรมนี้ — ค่าเริ่มต้นของทุกคนในตาราง แก้ทีละคนได้
   const [activityName,setActivityName]=useState("");
@@ -2139,10 +2192,11 @@ function TeacherScores({students,setStudents}){
       let xpDiff=0;
       const newLog=(s.xpLog||[]).map((log:any)=>{
         if(log.activity!==oldName)return log;
-        // ถ้าคนนี้ได้เกิน XP เต็มใหม่ ให้ปรับลงมาไม่ให้เกิน (เหมือนตอนแก้คะแนนเต็มของใบงาน)
-        const cappedXp=Math.min(log.xp||0,newMax);
-        xpDiff+=cappedXp-(log.xp||0);
-        return{...log,activity:newName.trim(),chapterId:newChapterId,maxXp:newMax,xp:cappedXp};
+        // ปรับคะแนนที่ได้ของทุกคนตามสัดส่วนคะแนนเต็มใหม่โดยอัตโนมัติ (ไม่ใช่แค่ตัดคนที่ได้เกิน)
+        const oldMax=log.maxXp||log.xp||1;
+        const newEarned=Math.round((log.xp||0)/oldMax*newMax);
+        xpDiff+=newEarned-(log.xp||0);
+        return{...log,activity:newName.trim(),chapterId:newChapterId,maxXp:newMax,xp:newEarned};
       });
       return{...s,xp:s.xp+xpDiff,xpLog:newLog};
     }));
@@ -2275,14 +2329,14 @@ function TeacherScores({students,setStudents}){
 
           <div className="card">
             <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,marginBottom:14}}>XP ทุกนักเรียน</div>
-            {[...students].sort((a,b)=>b.xp-a.xp).map((s,i)=>{const r=getRank(s.xp);return(
+            {[...students].sort((a,b)=>getEffectiveXP(b,assignments)-getEffectiveXP(a,assignments)).map((s,i)=>{const sxp=getEffectiveXP(s,assignments);const r=getRank(sxp);return(
               <div key={s.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid var(--border)"}}>
                 <span style={{width:28,textAlign:"center",fontSize:14,color:"var(--muted)"}}>{i+1}</span>
                 <span style={{fontSize:28}}>{s.avatar}</span>
                 <span style={{flex:1,fontSize:14}}>{s.name}</span>
-                <div style={{width:110}}><XPBar xp={s.xp} showLabel={false}/></div>
-                <div className="mono" style={{width:70,textAlign:"right",color:r.color}}>{s.xp.toLocaleString()}</div>
-                <GradeTag xp={s.xp}/>
+                <div style={{width:110}}><XPBar xp={sxp} showLabel={false}/></div>
+                <div className="mono" style={{width:70,textAlign:"right",color:r.color}}>{sxp.toLocaleString()}</div>
+                <GradeTag xp={sxp}/>
               </div>
             );})}
           </div>
@@ -2340,7 +2394,7 @@ function TeacherScores({students,setStudents}){
                         <span className="mono" style={{fontSize:11,color:"var(--gold)",padding:"3px 8px"}}>รวม {totalGiven.toLocaleString()} XP</span>
                       </div>
                     </div>
-                    <button className="btn-ghost" onClick={()=>setEditAct({oldName:act.name,newName:act.name,newChapterId:act.chapterId||"CH1",newMaxXp:act.maxXp||""})}
+                    <button className="btn-ghost" onClick={()=>setEditAct({oldName:act.name,newName:act.name,newChapterId:act.chapterId||"CH1",newMaxXp:act.maxXp||"",unit:"xp"})}
                       style={{fontSize:12,padding:"6px 14px",flexShrink:0}}>✏️ แก้ไข</button>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
@@ -2568,7 +2622,7 @@ function TeacherGrades({students,setStudents,assignments}){
             ].map((s,i)=>(
               <div key={i} className="card" style={{textAlign:"center"}}>
                 <div style={{fontSize:22,marginBottom:4}}>{s.icon}</div>
-                <div className="cond" style={{fontSize:30,fontWeight:900,color:s.c}}>{s.val}</div>
+                <div className="cond" style={{fontSize:typeof s.val==="number"?30:16,fontWeight:900,color:s.c,lineHeight:typeof s.val==="number"?1:1.3}}>{s.val}</div>
                 <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{s.label}</div>
               </div>
             ))}
@@ -3096,8 +3150,8 @@ async function syncStudentsToSheet(students,assignments){
       originalPassword:INIT_STUDENTS.find(x=>x.id===s.id)?.password||s.password,
       currentPassword:s.password,
       xp:s.xp,
-      grade:getRank(s.xp).grade,
-      rank:getRank(s.xp).label,
+      grade:getRank(getEffectiveXP(s,assignments)).grade,
+      rank:getRank(getEffectiveXP(s,assignments)).label,
       midterm:s.midterm,
       final:s.final,
       submissionLinks
@@ -3244,7 +3298,7 @@ export default function App(){
         </div>
       )}
       <div style={{position:"relative",zIndex:1,minHeight:"100vh"}}>
-        <TopNav user={navUser} role={role} page={page} setPage={setPage} onLogout={handleLogout}/>
+        <TopNav user={navUser} role={role} page={page} setPage={setPage} onLogout={handleLogout} assignments={assignments}/>
         <main>
           <PageHeader page={page} setPage={setPage}/>
           {loaded&&!dataLoadOk&&(
@@ -3258,18 +3312,18 @@ export default function App(){
           {role==="student"&&page==="dashboard"    &&currentStudent&&<StudentDashboard student={currentStudent} students={students} assignments={assignments} setPage={setPage} setStudents={setStudents}/>}
           {role==="student"&&page==="assignments"  &&currentStudent&&<StudentAssignments student={currentStudent} students={students} assignments={assignments} setStudents={setStudents} skipNextSave={skipNextSave} refreshFromSheet={refreshFromSheet}/>}
           {role==="student"&&page==="resources"    &&<StudentResources resources={resources}/>}
-          {role==="student"&&page==="ranking"      &&<RankingPage students={students} myId={userId} isTeacher={false}/>}
+          {role==="student"&&page==="ranking"      &&<RankingPage students={students} myId={userId} isTeacher={false} assignments={assignments}/>}
           {role==="student"&&page==="inventory"    &&currentStudent&&<StudentInventory student={currentStudent}/>}
           {role==="student"&&page==="settings"     &&currentStudent&&<StudentSettings student={currentStudent} setStudents={setStudents}/>}
           {role==="teacher"&&page==="overview"     &&<TeacherOverview students={students} assignments={assignments} setPage={setPage} maxXp={maxXpSetting} onEditMaxXp={()=>{setMaxXpInput(String(maxXpSetting));setMaxXpModal(true);}}/>}
           {role==="teacher"&&page==="students"     &&<TeacherStudents students={students} assignments={assignments} setStudents={setStudents}/>}
           {role==="teacher"&&page==="t-assignments"&&<TeacherAssignments assignments={assignments} setAssignments={setAssignments} students={students} setStudents={setStudents}/>}
           {role==="teacher"&&page==="t-resources"  &&<TeacherResources resources={resources} setResources={setResources}/>}
-          {role==="teacher"&&page==="t-scores"     &&<TeacherScores students={students} setStudents={setStudents}/>}
+          {role==="teacher"&&page==="t-scores"     &&<TeacherScores students={students} setStudents={setStudents} assignments={assignments}/>}
           {role==="teacher"&&page==="t-exam"       &&<TeacherExamScores students={students} setStudents={setStudents}/>}
           {role==="teacher"&&page==="t-grades"     &&<TeacherGrades students={students} setStudents={setStudents} assignments={assignments}/>}
           {role==="teacher"&&page==="t-airdrop"    &&<TeacherAirdrop students={students} setPendingAirdrop={setPendingAirdrop} setStudents={setStudents}/>}
-          {role==="teacher"&&page==="ranking"      &&<RankingPage students={students} myId={undefined} isTeacher={true}/>}
+          {role==="teacher"&&page==="ranking"      &&<RankingPage students={students} myId={undefined} isTeacher={true} assignments={assignments}/>}
         </main>
       </div>
     </>
