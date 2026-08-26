@@ -58,7 +58,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans Thai',sans-se
 .input:focus{border-color:var(--gold)}
 .input::placeholder{color:var(--muted)}
 select.input option{background:#1e3454}
-.overlay{position:fixed;inset:0;background:rgba(8,18,35,.85);backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px}
+.overlay{position:fixed;inset:0;background:rgba(8,18,35,.85);backdrop-filter:blur(8px);z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
 .divider{height:1px;background:var(--border);margin:14px 0}
 `;
 
@@ -2184,7 +2184,7 @@ function TeacherScores({students,setStudents,assignments}){
 
   function saveEditActivity(){
     if(!editAct)return;
-    const{oldName,newName,newChapterId,newMaxXp}=editAct;
+    const{oldName,newName,newChapterId,newMaxXp,newPhase}=editAct;
     if(!newName.trim()){toast("กรุณาใส่ชื่อกิจกรรม",true);return;}
     const newMax=Number(newMaxXp)||0;
     if(newMax<=0){toast("กรุณาใส่ XP เต็มให้ถูกต้อง",true);return;}
@@ -2196,12 +2196,23 @@ function TeacherScores({students,setStudents,assignments}){
         const oldMax=log.maxXp||log.xp||1;
         const newEarned=Math.round((log.xp||0)/oldMax*newMax);
         xpDiff+=newEarned-(log.xp||0);
-        return{...log,activity:newName.trim(),chapterId:newChapterId,maxXp:newMax,xp:newEarned};
+        return{...log,activity:newName.trim(),chapterId:newChapterId,maxXp:newMax,xp:newEarned,phase:newPhase||"before"};
       });
       return{...s,xp:s.xp+xpDiff,xpLog:newLog};
     }));
     toast(`✅ แก้ไข "${oldName}" → "${newName}" สำเร็จ!`);
     setEditAct(null);
+  }
+
+  function deleteActivity(name){
+    if(!window.confirm(`ลบกิจกรรม "${name}" ออกจากนักเรียนทุกคนเลยไหม? (คะแนนที่เคยให้ไปจะถูกหักออกด้วย)`))return;
+    setStudents((prev:any)=>prev.map((s:any)=>{
+      const removed=(s.xpLog||[]).filter((log:any)=>log.activity===name);
+      const removedXp=removed.reduce((sum:number,log:any)=>sum+(log.xp||0),0);
+      const newLog=(s.xpLog||[]).filter((log:any)=>log.activity!==name);
+      return{...s,xp:s.xp-removedXp,xpLog:newLog};
+    }));
+    toast(`🗑 ลบกิจกรรม "${name}" ออกจากทุกคนแล้ว`);
   }
 
   function doAdd(){
@@ -2224,9 +2235,10 @@ function TeacherScores({students,setStudents,assignments}){
     const map={};
     students.forEach(s=>{
       (s.xpLog||[]).forEach(log=>{
-        if(!map[log.activity])map[log.activity]={name:log.activity,chapterId:log.chapterId||"CH1",entries:{}};
+        if(!map[log.activity])map[log.activity]={name:log.activity,chapterId:log.chapterId||"CH1",phase:log.phase||"before",entries:{}};
         map[log.activity].entries[s.id]={xp:log.xp,maxXp:log.maxXp,date:log.date};
         map[log.activity].maxXp=Math.max(map[log.activity].maxXp||0,log.maxXp||log.xp||0);
+        map[log.activity].phase=log.phase||"before";
       });
     });
     return Object.values(map);
@@ -2358,11 +2370,37 @@ function TeacherScores({students,setStudents,assignments}){
               <input className="input" value={editAct.newName} onChange={e=>setEditAct({...editAct,newName:e.target.value})}
                 placeholder="ชื่อกิจกรรม"/>
             </div>
+            <div style={{marginBottom:14}}>
+              <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>คะแนนเต็ม</label>
+              <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:8}}>
+                <input className="input" type="number" min="1"
+                  value={editAct.unit==="xp"?editAct.newMaxXp:xpToScore(editAct.newMaxXp)}
+                  onChange={e=>{const v=Number(e.target.value)||0;setEditAct({...editAct,newMaxXp:editAct.unit==="xp"?v:v*25});}}
+                  placeholder="เช่น 200"/>
+                <div style={{display:"flex",gap:4}}>
+                  {[["xp","XP"],["points","คะแนน"]].map(([u,l])=>(
+                    <button key={u} type="button" onClick={()=>setEditAct({...editAct,unit:u})}
+                      style={{background:editAct.unit===u?"rgba(232,188,85,.18)":"rgba(255,255,255,.05)",
+                        border:`1px solid ${editAct.unit===u?"rgba(232,188,85,.6)":"var(--border)"}`,
+                        color:editAct.unit===u?"var(--gold)":"var(--muted2)",borderRadius:6,padding:"0 12px",
+                        fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:12}}>{l}</button>
+                  ))}
+                </div>
+              </div>
+              <div style={{fontSize:11,color:"var(--muted)",marginTop:6}}>= {editAct.newMaxXp||0} XP ({xpToScore(editAct.newMaxXp||0)} คะแนน) — จะปรับสัดส่วนคะแนนของทุกคนที่ได้กิจกรรมนี้ไปแล้วให้อัตโนมัติ</div>
+            </div>
             <div style={{marginBottom:20}}>
-              <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>XP เต็ม</label>
-              <input className="input" type="number" min="1" value={editAct.newMaxXp} onChange={e=>setEditAct({...editAct,newMaxXp:e.target.value})}
-                placeholder="เช่น 200"/>
-              <div style={{fontSize:11,color:"var(--muted)",marginTop:6}}>จะแก้ไขทุกนักเรียนที่ได้รับกิจกรรมนี้พร้อมกัน — ถ้าใครได้เกิน XP เต็มใหม่ จะปรับลงมาให้ไม่เกินอัตโนมัติ</div>
+              <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>ช่วงเวลา</label>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+                {[["before","🟣 ก่อนกลางภาค"],["after","🔵 หลังกลางภาค"]].map(([v,l])=>(
+                  <button key={v} onClick={()=>setEditAct({...editAct,newPhase:v})} className="btn"
+                    style={{background:editAct.newPhase===v?"rgba(232,188,85,.18)":"rgba(255,255,255,.05)",
+                      border:`1px solid ${editAct.newPhase===v?"rgba(232,188,85,.6)":"var(--border)"}`,
+                      color:editAct.newPhase===v?"var(--gold)":"var(--muted2)",
+                      borderRadius:6,padding:"10px 6px",fontSize:12,
+                      fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:.5}}>{l}</button>
+                ))}
+              </div>
             </div>
             <div style={{display:"flex",gap:10}}>
               <button className="btn btn-gold" onClick={saveEditActivity} style={{flex:1,fontSize:15,padding:12}}>💾 บันทึก</button>
@@ -2379,23 +2417,29 @@ function TeacherScores({students,setStudents,assignments}){
               <div className="cond" style={{fontSize:20,color:"var(--muted)"}}>ยังไม่มีการให้คะแนน</div>
             </div>
           ):(
-            allActivities.map((act,ai)=>{
+            allActivities.map((act:any,ai)=>{
               const sortedStudents=[...students].sort((a,b)=>b.xp-a.xp);
-              const totalGiven=Object.values(act.entries).reduce((s,e)=>s+(e.xp||0),0);
+              const totalGiven=Object.values(act.entries).reduce((s:number,e:any)=>s+(e.xp||0),0);
               const receivedCount=Object.keys(act.entries).length;
               return(
                 <div key={ai} className="card" style={{marginBottom:16,borderColor:"rgba(232,188,85,.35)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14,flexWrap:"wrap",gap:8}}>
                     <div style={{flex:1}}>
                       <div className="cond" style={{fontSize:20,fontWeight:700,color:"var(--gold2)"}}>{act.name}</div>
-                      <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap"}}>
+                      <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap",alignItems:"center"}}>
                         <span className="badge" style={{background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.4)",color:"var(--green)"}}>✓ ได้รับ {receivedCount} คน</span>
                         <span className="badge" style={{background:"rgba(232,96,96,.1)",border:"1px solid rgba(232,96,96,.28)",color:"var(--red)"}}>— ยังไม่ได้ {students.length-receivedCount} คน</span>
-                        <span className="mono" style={{fontSize:11,color:"var(--gold)",padding:"3px 8px"}}>รวม {totalGiven.toLocaleString()} XP</span>
+                        <span className="badge" style={{background:act.phase==="after"?"rgba(244,114,182,.14)":"rgba(167,139,250,.14)",border:`1px solid ${act.phase==="after"?"rgba(244,114,182,.4)":"rgba(167,139,250,.4)"}`,color:act.phase==="after"?"#f472b6":"#a78bfa"}}>{act.phase==="after"?"🔵 หลังกลางภาค":"🟣 ก่อนกลางภาค"}</span>
+                        <span className="mono" style={{fontSize:11,color:"var(--gold)",padding:"3px 8px"}}>รวม {totalGiven.toLocaleString()} XP ({xpToScore(totalGiven)} คะแนน)</span>
+                        <span className="mono" style={{fontSize:11,color:"var(--muted)",padding:"3px 8px"}}>เต็มคนละ {act.maxXp.toLocaleString()} XP ({xpToScore(act.maxXp)} คะแนน)</span>
                       </div>
                     </div>
-                    <button className="btn-ghost" onClick={()=>setEditAct({oldName:act.name,newName:act.name,newChapterId:act.chapterId||"CH1",newMaxXp:act.maxXp||"",unit:"xp"})}
-                      style={{fontSize:12,padding:"6px 14px",flexShrink:0}}>✏️ แก้ไข</button>
+                    <div style={{display:"flex",gap:8,flexShrink:0}}>
+                      <button className="btn-ghost" onClick={()=>setEditAct({oldName:act.name,newName:act.name,newChapterId:act.chapterId||"CH1",newMaxXp:act.maxXp||"",newPhase:act.phase||"before",unit:"xp"})}
+                        style={{fontSize:12,padding:"6px 14px"}}>✏️ แก้ไข</button>
+                      <button className="btn-ghost" onClick={()=>deleteActivity(act.name)}
+                        style={{fontSize:12,padding:"6px 14px",borderColor:"rgba(232,96,96,.4)",color:"var(--red)"}}>🗑 ลบ</button>
+                    </div>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
                     {sortedStudents.map(s=>{
@@ -2408,7 +2452,7 @@ function TeacherScores({students,setStudents,assignments}){
                           <span style={{fontSize:20,flexShrink:0}}>{s.avatar}</span>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontSize:12,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name.split(" ").slice(1).join(" ")}</div>
-                            {entry?<div className="mono" style={{fontSize:13,color:"var(--gold)",fontWeight:700}}>+{entry.xp} XP</div>
+                            {entry?<div className="mono" style={{fontSize:13,color:"var(--gold)",fontWeight:700}}>+{entry.xp} XP ({xpToScore(entry.xp)} คะแนน)</div>
                                   :<div style={{fontSize:11,color:"var(--muted)"}}>ยังไม่ได้รับ</div>}
                           </div>
                         </div>
