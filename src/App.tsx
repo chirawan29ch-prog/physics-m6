@@ -1233,7 +1233,7 @@ function TeacherExamScores({students,setStudents}){
     <div className="fade-up" style={{padding:20,maxWidth:800,margin:"0 auto"}}>
       <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:20}}>📝 ประกาศคะแนนสอบ</div>
       {saved&&<div style={{background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.4)",borderRadius:8,padding:"12px 18px",color:"var(--green)",fontSize:14,marginBottom:16,textAlign:"center"}}>✅ บันทึกแล้ว — คะแนนแสดงในหน้านักเรียนทันที!</div>}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16,marginBottom:16}}>
         <div className="card" style={{borderColor:"rgba(147,197,253,.55)"}}>
           <div className="cond" style={{fontSize:18,color:"#93c5fd",letterSpacing:2,marginBottom:4}}>🔵 สอบกลางภาค</div>
           <div className="mono" style={{fontSize:10,color:"var(--muted)",marginBottom:14}}>คะแนนเต็ม 15 คะแนน (375 XP)</div>
@@ -1319,7 +1319,7 @@ function GradeChart({students,assignments}){
           </div>
         ))}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:20}}>
         <div style={{position:"relative",height:200}}><canvas ref={chartRef}/></div>
         <div style={{position:"relative",height:200}}><canvas ref={pieRef}/></div>
       </div>
@@ -1356,7 +1356,7 @@ function TeacherOverview({students,assignments,setPage,maxXp,onEditMaxXp}:any){
         </div>
         <button className="btn-ghost" onClick={onEditMaxXp} style={{fontSize:13,padding:"9px 18px",borderColor:"rgba(232,188,85,.4)",color:"var(--gold)"}}>✏️ แก้ไข</button>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:20}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:12,marginBottom:20}}>
         {[
           {page:"t-assignments",icon:"📋",title:"เพิ่ม / จัดการงาน",color:"var(--cyan)",btn:"➕ เพิ่มงานใหม่"},
           {page:"t-resources",  icon:"📁",title:"อัปโหลดไฟล์ความรู้",color:"var(--gold)",btn:"⬆ อัปโหลดไฟล์"},
@@ -1389,6 +1389,7 @@ function TeacherOverview({students,assignments,setPage,maxXp,onEditMaxXp}:any){
 // ─────────────────────────────────────────────
 function TeacherStudents({students,assignments,setStudents}){
   const [sel,setSel]=useState(null);
+  useEffect(()=>{window.scrollTo(0,0);},[sel]);
   const [editXpModal,setEditXpModal]=useState(false);
   const [newXp,setNewXp]=useState("");
   const [xpMsg,setXpMsg]=useState(null);
@@ -2176,6 +2177,7 @@ function TeacherResources({resources,setResources}){
 // ─────────────────────────────────────────────
 function TeacherScores({students,setStudents,assignments}){
   const [tab,setTab]=useState("add");
+  useEffect(()=>{window.scrollTo(0,0);},[tab]);
   const [maxXpAmt,setMaxXpAmt]=useState(""); // XP เต็มของกิจกรรมนี้ — ค่าเริ่มต้นของทุกคนในตาราง แก้ทีละคนได้
   const [activityName,setActivityName]=useState("");
   const [selChapter,setSelChapter]=useState("CH1");
@@ -2184,6 +2186,31 @@ function TeacherScores({students,setStudents,assignments}){
   const [perStuXp,setPerStuXp]=useState<any>({}); // {studentId:"ค่าที่แก้เอง"} — ถ้าไม่มีจะ fallback ไปที่ maxXpAmt
   const [msg,setMsg]=useState(null);
   const [editAct,setEditAct]=useState<any>(null); // {oldName, newName, newChapterId, newMaxXp}
+  const [editEntry,setEditEntry]=useState<any>(null); // {activityName, studentId, studentName, xp, maxXp, isNew}
+  function saveEditEntry(){
+    if(!editEntry)return;
+    const{activityName,studentId,xp,maxXp}=editEntry;
+    const newXp=Number(xp);
+    if(isNaN(newXp)||newXp<0){toast("กรุณาใส่ XP ให้ถูกต้อง",true);return;}
+    const today=new Date().toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
+    setStudents((prev:any)=>prev.map((s:any)=>{
+      if(s.id!==studentId)return s;
+      const idx=(s.xpLog||[]).findIndex((l:any)=>l.activity===activityName);
+      if(idx===-1){
+        // คนนี้ยังไม่เคยได้รับกิจกรรมนี้มาก่อน — เพิ่มรายการใหม่ให้
+        const act:any=allActivities.find((a:any)=>a.name===activityName);
+        const logEntry={activity:activityName,xp:newXp,maxXp:Number(maxXp)||act?.maxXp||newXp,date:today,chapterId:act?.chapterId||"CH1",phase:act?.phase||"before"};
+        return{...s,xp:s.xp+newXp,xpLog:[...(s.xpLog||[]),logEntry]};
+      }
+      const oldXp=s.xpLog[idx].xp||0;
+      const diff=newXp-oldXp;
+      const newLog=[...s.xpLog];
+      newLog[idx]={...newLog[idx],xp:newXp};
+      return{...s,xp:s.xp+diff,xpLog:newLog};
+    }));
+    toast(`✅ แก้ไข XP ของ ${editEntry.studentName} สำเร็จ!`);
+    setEditEntry(null);
+  }
 
   function toast(t,isErr=false){setMsg({text:t,err:isErr});setTimeout(()=>setMsg(null),3500);}
   function xpFor(id){return perStuXp[id]!==undefined?perStuXp[id]:maxXpAmt;}
@@ -2277,7 +2304,7 @@ function TeacherScores({students,setStudents,assignments}){
         <>
           <div className="card card-gold" style={{marginBottom:20}}>
             <div className="cond" style={{fontSize:22,color:"var(--gold)",letterSpacing:2,marginBottom:18}}>⭐ เพิ่ม XP จากกิจกรรม</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:14}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:14,marginBottom:14}}>
               <div>
                 <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>บทเรียน</label>
                 <select className="input" value={selChapter} onChange={e=>setSelChapter(e.target.value)}>
@@ -2290,7 +2317,7 @@ function TeacherScores({students,setStudents,assignments}){
                   placeholder="เช่น ตอบคำถาม, แบบทดสอบ"/>
               </div>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:16}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:14,marginBottom:16}}>
               <div>
                 <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>XP เต็ม</label>
                 <input className="input" type="number" value={maxXpAmt} onChange={e=>setMaxXpAmt(e.target.value)} placeholder="เช่น 200"/>
@@ -2361,6 +2388,28 @@ function TeacherScores({students,setStudents,assignments}){
             );})}
           </div>
         </>
+      )}
+
+      {editEntry&&(
+        <div className="overlay">
+          <div className="card card-gold" style={{width:"100%",maxWidth:400}}>
+            <div className="cond" style={{fontSize:22,color:"var(--gold)",letterSpacing:2,marginBottom:6}}>✏️ แก้ไข XP</div>
+            <div style={{color:"var(--muted2)",fontSize:13,marginBottom:16}}>{editEntry.studentName} · {editEntry.activityName}</div>
+            {editEntry.isNew&&<div style={{fontSize:11,color:"#eab308",marginBottom:14,padding:"8px 12px",background:"rgba(234,179,8,.1)",borderRadius:6}}>
+              💡 คนนี้ยังไม่เคยได้รับกิจกรรมนี้มาก่อน กรอกแล้วบันทึกจะเพิ่มให้ใหม่
+            </div>}
+            <div style={{marginBottom:20}}>
+              <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>XP ที่ได้</label>
+              <input className="input" type="number" min="0" value={editEntry.xp}
+                onChange={e=>setEditEntry({...editEntry,xp:e.target.value})} autoFocus/>
+              <div style={{fontSize:11,color:"var(--muted)",marginTop:6}}>= {editEntry.xp||0} XP ({xpToScore(Number(editEntry.xp)||0)} คะแนน) จากเต็ม {editEntry.maxXp} XP ({xpToScore(editEntry.maxXp)} คะแนน)</div>
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button className="btn btn-gold" onClick={saveEditEntry} style={{flex:1,fontSize:15,padding:12}}>💾 บันทึก</button>
+              <button className="btn-outline" onClick={()=>setEditEntry(null)} style={{flex:1}}>ยกเลิก</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {editAct&&(
@@ -2453,16 +2502,20 @@ function TeacherScores({students,setStudents,assignments}){
                     {sortedStudents.map(s=>{
                       const entry=act.entries[s.id];
                       return(
-                        <div key={s.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",
+                        <div key={s.id} onClick={()=>setEditEntry({activityName:act.name,studentId:s.id,studentName:s.name,xp:entry?entry.xp:act.maxXp,maxXp:act.maxXp,isNew:!entry})}
+                          style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",cursor:"pointer",
                           background:entry?"rgba(94,200,126,.07)":"rgba(232,96,96,.05)",
                           border:`1px solid ${entry?"rgba(94,200,126,.25)":"rgba(232,96,96,.15)"}`,
-                          borderRadius:7}}>
+                          borderRadius:7,transition:"filter .15s"}}
+                          onMouseEnter={e=>(e.currentTarget as HTMLElement).style.filter="brightness(1.3)"}
+                          onMouseLeave={e=>(e.currentTarget as HTMLElement).style.filter="brightness(1)"}>
                           <span style={{fontSize:20,flexShrink:0}}>{s.avatar}</span>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontSize:12,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name.split(" ").slice(1).join(" ")}</div>
                             {entry?<div className="mono" style={{fontSize:13,color:"var(--gold)",fontWeight:700}}>+{entry.xp} XP ({xpToScore(entry.xp)} คะแนน)</div>
                                   :<div style={{fontSize:11,color:"var(--muted)"}}>ยังไม่ได้รับ</div>}
                           </div>
+                          <span style={{fontSize:12,color:"var(--muted)",flexShrink:0}}>✏️</span>
                         </div>
                       );
                     })}
@@ -2485,6 +2538,7 @@ function TeacherScores({students,setStudents,assignments}){
 // ─────────────────────────────────────────────
 function TeacherGrades({students,setStudents,assignments}){
   const [tabG,setTabG]=useState("score");
+  useEffect(()=>{window.scrollTo(0,0);},[tabG]);
   const [maxPP,setMaxPP]=useState(20);
   // คะแนน pre/post-test เก็บตรงในตัวนักเรียนแต่ละคน (student.pretest/posttest) แล้วบันทึกทันทีที่แก้
   // เพื่อให้รอดจากการสลับแท็บ/รีเฟรชหน้า เหมือนข้อมูลอื่นๆ ในระบบ (ไม่ใช่ state ชั่วคราวเหมือนเดิม)
@@ -3063,7 +3117,7 @@ function TeacherAirdrop({students,setPendingAirdrop,setStudents}){
           </>
         )}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:16}}>
         <div style={{display:"flex",flexDirection:"column",gap:12}}>
           <div className="card">
             <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:12}}>
@@ -3284,6 +3338,9 @@ export default function App(){
   },[resources,loaded,dataLoadOk]);
 
   const [page,setPage]=useState("dashboard");
+  // เว็บนี้เปลี่ยนหน้าด้วย React state (ไม่ได้โหลดหน้าใหม่จริง) เบราว์เซอร์เลยไม่เด้ง scroll กลับขึ้นบนสุดให้อัตโนมัติ
+  // ทุกครั้งที่เปลี่ยนหน้า ให้เลื่อนกลับขึ้นบนสุดเอง กันปัญหา "กดเข้ามาแล้วต้องเลื่อนหา"
+  useEffect(()=>{window.scrollTo(0,0);},[page]);
   const [pendingAirdrop,setPendingAirdrop]=useState(null);
   const [activePopup,setActivePopup]=useState(null);
   const [loginPending,setLoginPending]=useState<any>(null);
