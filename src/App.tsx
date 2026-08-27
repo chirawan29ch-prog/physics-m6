@@ -335,17 +335,19 @@ function GradeTable(){
         </div>
       </div>
       <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:14}}>📊 เกณฑ์ XP → เกรด</div>
-      <div style={{display:"grid",gridTemplateColumns:"1.4fr 1.2fr 1fr .5fr .8fr",gap:1,background:"var(--border)"}}>
-        {["RANK","XP","คะแนน","เกรด","สถานะ"].map(h=>(
-          <div key={h} style={{background:"var(--bg3)",padding:"7px 10px",fontSize:11,color:"var(--muted2)",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:1}}>{h}</div>
-        ))}
-        {XP_RANKS.map(r=>[
-          <div key={r.label+"a"} style={{background:"var(--bg2)",padding:"7px 10px",fontSize:12,display:"flex",gap:6,alignItems:"center"}}><span>{r.icon}</span><span style={{color:r.color,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{r.label}</span></div>,
-          <div key={r.label+"b"} style={{background:"var(--bg2)",padding:"7px 10px",fontFamily:"'Share Tech Mono',monospace",fontSize:11,color:"var(--text)"}}>{r.minXP.toLocaleString()}–{r.maxXP.toLocaleString()}</div>,
-          <div key={r.label+"c"} style={{background:"var(--bg2)",padding:"7px 10px",fontFamily:"'Share Tech Mono',monospace",fontSize:11,color:"var(--muted2)"}}>{r.scoreRange}</div>,
-          <div key={r.label+"d"} style={{background:"var(--bg2)",padding:"7px 10px",fontFamily:"'Share Tech Mono',monospace",fontSize:16,fontWeight:700,color:r.color}}>{r.grade}</div>,
-          <div key={r.label+"e"} style={{background:"var(--bg2)",padding:"7px 10px",fontSize:12,color:"var(--muted2)"}}>{r.desc}</div>,
-        ])}
+      <div style={{overflowX:"auto"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1.4fr 1.2fr 1fr .5fr .8fr",gap:1,background:"var(--border)",minWidth:480}}>
+          {["RANK","XP","คะแนน","เกรด","สถานะ"].map(h=>(
+            <div key={h} style={{background:"var(--bg3)",padding:"7px 10px",fontSize:11,color:"var(--muted2)",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:1,whiteSpace:"nowrap"}}>{h}</div>
+          ))}
+          {XP_RANKS.map(r=>[
+            <div key={r.label+"a"} style={{background:"var(--bg2)",padding:"7px 10px",fontSize:12,display:"flex",gap:6,alignItems:"center",whiteSpace:"nowrap"}}><span>{r.icon}</span><span style={{color:r.color,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{r.label}</span></div>,
+            <div key={r.label+"b"} style={{background:"var(--bg2)",padding:"7px 10px",fontFamily:"'Share Tech Mono',monospace",fontSize:11,color:"var(--text)",whiteSpace:"nowrap"}}>{r.minXP.toLocaleString()}–{r.maxXP.toLocaleString()}</div>,
+            <div key={r.label+"c"} style={{background:"var(--bg2)",padding:"7px 10px",fontFamily:"'Share Tech Mono',monospace",fontSize:11,color:"var(--muted2)",whiteSpace:"nowrap"}}>{r.scoreRange}</div>,
+            <div key={r.label+"d"} style={{background:"var(--bg2)",padding:"7px 10px",fontFamily:"'Share Tech Mono',monospace",fontSize:16,fontWeight:700,color:r.color}}>{r.grade}</div>,
+            <div key={r.label+"e"} style={{background:"var(--bg2)",padding:"7px 10px",fontSize:12,color:"var(--muted2)",whiteSpace:"nowrap"}}>{r.desc}</div>,
+          ])}
+        </div>
       </div>
     </div>
   );
@@ -598,26 +600,28 @@ function TopNav({user,role,page,setPage,onLogout,assignments}){
   const tabs=role==="teacher"?tTabs:sTabs;
   return(
     <div style={{position:"sticky",top:0,zIndex:100,background:"rgba(12,24,42,.96)",backdropFilter:"blur(20px)",borderBottom:"1px solid var(--border)"}}>
-      <div style={{maxWidth:1200,margin:"0 auto",padding:"0 16px",height:54,display:"flex",alignItems:"center",gap:4}}>
-        <div className="cond" style={{fontSize:20,fontWeight:900,color:"var(--gold)",letterSpacing:3,marginRight:20,flexShrink:0,textShadow:"0 0 18px rgba(232,188,85,.5)"}}>⚡ PHYS·BG</div>
-        <div style={{display:"flex",flex:1,overflowX:"auto",gap:0}}>
+      <div style={{maxWidth:1200,margin:"0 auto",padding:"8px 16px"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
+          <div className="cond" style={{fontSize:"clamp(16px,4vw,20px)",fontWeight:900,color:"var(--gold)",letterSpacing:2,flexShrink:0,whiteSpace:"nowrap",textShadow:"0 0 18px rgba(232,188,85,.5)"}}>⚡ PHYS·BG</div>
+          <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+            <span style={{fontSize:20,flexShrink:0}}>{user?.avatar||"👩‍✈️"}</span>
+            <div style={{lineHeight:1.3,minWidth:0}}>
+              <div style={{fontSize:12,color:"var(--text)",maxWidth:"28vw",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user?.name||"Commander"}</div>
+              <div className="mono" style={{fontSize:9,color:"var(--muted)",whiteSpace:"nowrap"}}>{role==="teacher"?"COMMANDER":getRank(getEffectiveXP(user,assignments)).label}</div>
+            </div>
+            <button className="btn-outline" onClick={onLogout} style={{padding:"6px 14px",fontSize:11,flexShrink:0,whiteSpace:"nowrap"}}>OUT</button>
+          </div>
+        </div>
+        <div style={{display:"flex",overflowX:"auto",gap:0,marginTop:6,marginLeft:-16,marginRight:-16,paddingLeft:16,paddingRight:16}}>
           {tabs.map(t=>(
             <button key={t.id} onClick={()=>setPage(t.id)} className="btn"
-              style={{background:page===t.id?"rgba(232,188,85,.1)":"transparent",padding:"0 14px",height:54,
+              style={{background:page===t.id?"rgba(232,188,85,.1)":"transparent",padding:"0 14px",height:44,
                 color:page===t.id?"var(--gold2)":"var(--muted2)",
                 borderBottom:page===t.id?"2px solid var(--gold)":"2px solid transparent",
                 borderRadius:0,fontSize:12,letterSpacing:1,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>
               {t.label}
             </button>
           ))}
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
-          <span style={{fontSize:22}}>{user?.avatar||"👩‍✈️"}</span>
-          <div style={{lineHeight:1.3}}>
-            <div style={{fontSize:12,color:"var(--text)",maxWidth:100,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user?.name||"Commander"}</div>
-            <div className="mono" style={{fontSize:9,color:"var(--muted)"}}>{role==="teacher"?"COMMANDER":getRank(getEffectiveXP(user,assignments)).label}</div>
-          </div>
-          <button className="btn-outline" onClick={onLogout} style={{padding:"6px 14px",fontSize:11}}>OUT</button>
         </div>
       </div>
     </div>
@@ -699,29 +703,28 @@ function ScoreBreakdown({student, assignments}){
   return(
     <div className="card" style={{marginBottom:16}}>
       <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:10}}>📊 สัดส่วนคะแนน 2,500 XP (100 คะแนน)</div>
-      <div style={{display:"flex",borderRadius:10,overflow:"hidden",height:30,marginBottom:10,gap:2}}>
+      <div style={{display:"flex",borderRadius:10,overflow:"hidden",height:14,marginBottom:10,gap:2}}>
         {segs.map((s,i)=>(
-          <div key={i} style={{width:`${s.w}%`,background:s.bg,display:"flex",alignItems:"center",
-            justifyContent:"center",fontSize:11,fontWeight:600,color:s.txt,
-            borderRadius:i===0?"6px 0 0 6px":i===3?"0 6px 6px 0":"0"}}>{s.label}</div>
+          <div key={i} style={{width:`${s.w}%`,background:s.bg,
+            borderRadius:i===0?"6px 0 0 6px":i===3?"0 6px 6px 0":"0"}}></div>
         ))}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:10}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:8,marginBottom:10}}>
         {segs.map((s,i)=>(
-          <div key={i} style={{background:s.cbg,border:`0.5px solid ${s.cbr}`,borderRadius:8,padding:"10px 10px"}}>
-            <div style={{fontSize:10,color:s.bg,fontWeight:600,marginBottom:6,lineHeight:1.3}}>{s.label}</div>
+          <div key={i} style={{background:s.cbg,border:`0.5px solid ${s.cbr}`,borderRadius:8,padding:"10px 10px",minWidth:0}}>
+            <div style={{fontSize:11,color:s.bg,fontWeight:600,marginBottom:6,lineHeight:1.3}}>{s.label}</div>
             <div style={{background:"rgba(0,0,0,.18)",borderRadius:4,overflow:"hidden",height:8,marginBottom:4}}>
               <div style={{width:`${s.ok&&s.pct!==null?s.pct:0}%`,height:"100%",background:s.bar,borderRadius:4,transition:"width .6s"}}/>
             </div>
             {s.ok&&s.score!==null
               ?<>
-                  <div style={{fontSize:12,color:"var(--text)",fontWeight:600,fontFamily:"'Share Tech Mono',monospace"}}>{s.score*25} XP ({s.score} คะแนน)</div>
-                  <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"var(--muted)",marginTop:1}}>
-                    <span>เต็ม {s.max*25} XP ({s.max} คะแนน)</span>
-                    <span style={{color:s.bg}}>{s.pct}%</span>
+                  <div style={{fontSize:12,color:"var(--text)",fontWeight:600,fontFamily:"'Share Tech Mono',monospace",whiteSpace:"nowrap"}}>{s.score*25} XP ({s.score} คะแนน)</div>
+                  <div style={{display:"flex",justifyContent:"space-between",gap:6,fontSize:10,color:"var(--muted)",marginTop:1}}>
+                    <span style={{whiteSpace:"nowrap"}}>เต็ม {s.max*25} XP ({s.max} คะแนน)</span>
+                    <span style={{color:s.bg,flexShrink:0}}>{s.pct}%</span>
                   </div>
                 </>
-              :<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>ยังไม่ประกาศ (เต็ม {s.max*25} XP / {s.max} คะแนน)</div>}
+              :<div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>ยังไม่ประกาศ<br/>(เต็ม {s.max*25} XP / {s.max} คะแนน)</div>}
           </div>
         ))}
       </div>
@@ -777,7 +780,7 @@ function StudentDashboard({student,students,assignments,setPage,setStudents}){
           <div style={{fontSize:60}}>{student.avatar}</div>
           <div style={{flex:1,minWidth:180}}>
             <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:4}}>PLAYER PROFILE</div>
-            <div className="cond" style={{fontSize:34,fontWeight:700,color:"#fff",lineHeight:1,marginBottom:10}}>{student.name}</div>
+            <div className="cond" style={{fontSize:"clamp(19px,5.5vw,34px)",fontWeight:700,color:"#fff",lineHeight:1.25,marginBottom:10,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{student.name}</div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
               <span className="badge" style={{background:`${rank.color}20`,border:`1px solid ${rank.color}50`,color:rank.color}}>{rank.icon} {rank.label}</span>
               <span className="badge" style={{background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.4)",color:"var(--green)"}}>✓ {submitted}/{assignments.length} งาน</span>
@@ -974,31 +977,32 @@ function StudentAssignments({student,students,assignments,setStudents,skipNextSa
               if(it.kind==="task"){
                 const a=it.a,sub=it.sub,tm=it.tm,ch=it.ch;
                 return(
-                  <div key={it.key} className="card" style={{display:"flex",gap:16,alignItems:"center",marginBottom:8,
+                  <div key={it.key} className="card" style={{display:"flex",gap:16,alignItems:"center",marginBottom:8,flexWrap:"wrap",
                     borderColor:sub?`${ch.color}50`:"var(--border)",background:sub?`linear-gradient(135deg,var(--bg2),${ch.bg})`:"var(--bg2)"}}>
                     <div style={{fontSize:28,flexShrink:0}}>{tm.icon||"📄"}</div>
-                    <div style={{flex:1,minWidth:0}}>
+                    <div style={{flex:1,minWidth:200}}>
                       <div style={{display:"flex",gap:8,marginBottom:6,flexWrap:"wrap"}}>
-                        <span className="badge" style={{background:`${ch.color}18`,border:`1px solid ${ch.color}45`,color:ch.color,fontSize:9}}>{ch.icon} {ch.label}</span>
-                        <span className="badge" style={{background:`${tm.color}20`,border:`1px solid ${tm.color}50`,color:tm.color}}>{tm.label}</span>
-                        {sub?<span className="badge" style={{background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.4)",color:"var(--green)"}}>✓ ส่งแล้ว</span>
-                           :<span className="badge" style={{background:"rgba(232,96,96,.1)",border:"1px solid rgba(232,96,96,.3)",color:"var(--red)"}}>⏳ ยังไม่ส่ง</span>}
+                        <span className="badge" style={{background:`${ch.color}18`,border:`1px solid ${ch.color}45`,color:ch.color,fontSize:9,whiteSpace:"nowrap"}}>{ch.icon} {ch.label}</span>
+                        <span className="badge" style={{background:`${tm.color}20`,border:`1px solid ${tm.color}50`,color:tm.color,whiteSpace:"nowrap"}}>{tm.label}</span>
+                        {sub?<span className="badge" style={{background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.4)",color:"var(--green)",whiteSpace:"nowrap"}}>✓ ส่งแล้ว</span>
+                           :<span className="badge" style={{background:"rgba(232,96,96,.1)",border:"1px solid rgba(232,96,96,.3)",color:"var(--red)",whiteSpace:"nowrap"}}>⏳ ยังไม่ส่ง</span>}
                       </div>
-                      <div style={{fontSize:14,fontWeight:600,color:"#fff",marginBottom:4}}>{a.title} <span style={{fontSize:12,color:"var(--muted)",fontWeight:400}}>(เต็ม {a.xp} XP / {xpToScore(a.xp)} คะแนน)</span></div>
-                      <div style={{fontSize:12,color:"var(--muted)"}}>{a.desc} · ครบกำหนด {a.due}</div>
+                      <div style={{fontSize:14,fontWeight:600,color:"#fff",marginBottom:4}}>{a.title}</div>
+                      <div style={{fontSize:12,color:"var(--muted)",fontWeight:400,whiteSpace:"nowrap"}}>(เต็ม {a.xp} XP / {xpToScore(a.xp)} คะแนน)</div>
+                      <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>{a.desc} · <span style={{whiteSpace:"nowrap"}}>ครบกำหนด {a.due}</span></div>
                       {sub&&<div style={{fontSize:12,marginTop:4}}>
                         {sub.uploading?<span style={{color:"var(--gold)"}}>⏳ กำลังอัปโหลดไฟล์...</span>:
                           <a href={sub.file} target="_blank" rel="noreferrer" style={{color:"var(--cyan)"}}>🔗 ดูไฟล์งาน</a>}
-                        <span style={{color:"var(--muted)"}}> · {sub.submittedAt}</span>
-                        {!sub.uploading&&<span style={{marginLeft:8,color:sub.graded?"var(--gold)":"var(--muted)",fontFamily:"'Share Tech Mono',monospace",fontSize:11}}>
+                        <span style={{color:"var(--muted)",whiteSpace:"nowrap"}}> · {sub.submittedAt}</span>
+                        {!sub.uploading&&<span style={{marginLeft:8,color:sub.graded?"var(--gold)":"var(--muted)",fontFamily:"'Share Tech Mono',monospace",fontSize:11,whiteSpace:"nowrap"}}>
                           {sub.graded?`${sub.xpEarned} XP (${xpToScore(sub.xpEarned)} คะแนน)`:"⏳ รอครูตรวจ"}
                         </span>}
                       </div>}
                     </div>
                     <div style={{display:"flex",flexDirection:"column",gap:6,flexShrink:0}}>
-                      {!sub&&<button className="btn btn-cyan" onClick={()=>openUpload(a)} style={{padding:"8px 14px",fontSize:12}}>📎 ส่งงาน</button>}
-                      {sub&&!sub.uploading&&<button className="btn-ghost" onClick={()=>replaceFile(a.id)} style={{fontSize:11}}>🔄 เปลี่ยน</button>}
-                      {sub&&!sub.uploading&&<button className="btn btn-red" onClick={()=>removeSubmission(a.id)} style={{padding:"6px 12px",fontSize:11}}>🗑 ลบ</button>}
+                      {!sub&&<button className="btn btn-cyan" onClick={()=>openUpload(a)} style={{padding:"8px 14px",fontSize:12,whiteSpace:"nowrap"}}>📎 ส่งงาน</button>}
+                      {sub&&!sub.uploading&&<button className="btn-ghost" onClick={()=>replaceFile(a.id)} style={{fontSize:11,whiteSpace:"nowrap"}}>🔄 เปลี่ยน</button>}
+                      {sub&&!sub.uploading&&<button className="btn btn-red" onClick={()=>removeSubmission(a.id)} style={{padding:"6px 12px",fontSize:11,whiteSpace:"nowrap"}}>🗑 ลบ</button>}
                     </div>
                   </div>
                 );
@@ -1084,22 +1088,22 @@ function RankingPage({students,myId,isTeacher=false,assignments}){
       <div className="fade-up" style={{padding:20,maxWidth:700,margin:"0 auto"}}>
         <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:20}}>🏆 TOP 3 LEADERBOARD</div>
         {top3.map((s,i)=>{const sxp=eff(s);const r=getRank(sxp);const isMe=s.id===myId;return(
-          <div key={s.id} className="card slide-r" style={{display:"flex",alignItems:"center",gap:16,marginBottom:12,
+          <div key={s.id} className="card slide-r" style={{display:"flex",alignItems:"center",gap:14,marginBottom:12,flexWrap:"wrap",
             borderColor:isMe?"rgba(232,188,85,.6)":i===0?"rgba(232,188,85,.28)":"var(--border)",
             background:isMe?"rgba(232,188,85,.07)":"var(--bg2)",animationDelay:`${i*.1}s`,
             boxShadow:i===0?"0 0 24px rgba(232,188,85,.12)":"none"}}>
-            <div style={{width:54,textAlign:"center"}}><span style={{fontSize:34}}>{medals[i]}</span></div>
-            <div style={{fontSize:40}}>{s.avatar}</div>
-            <div style={{flex:1}}>
+            <div style={{width:40,textAlign:"center",flexShrink:0}}><span style={{fontSize:30}}>{medals[i]}</span></div>
+            <div style={{fontSize:36,flexShrink:0}}>{s.avatar}</div>
+            <div style={{flex:1,minWidth:140}}>
               <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:6,flexWrap:"wrap"}}>
-                <span style={{fontSize:16,fontWeight:600,color:isMe?"var(--gold)":"#fff"}}>{s.name}</span>
+                <span style={{fontSize:16,fontWeight:600,color:isMe?"var(--gold)":"#fff",whiteSpace:"nowrap"}}>{s.name}</span>
                 {isMe&&<span className="badge" style={{background:"rgba(232,188,85,.18)",border:"1px solid rgba(232,188,85,.45)",color:"var(--gold)"}}>YOU</span>}
               </div>
               <div style={{maxWidth:280}}><XPBar xp={sxp} showLabel={false}/></div>
             </div>
-            <div style={{textAlign:"center"}}>
-              <div className="cond" style={{fontSize:34,fontWeight:900,color:mc[i]}}>{sxp.toLocaleString()}</div>
-              <div style={{fontSize:10,color:"var(--muted)"}}>XP ({xpToScore(sxp)} คะแนน)</div>
+            <div style={{textAlign:"center",flexShrink:0}}>
+              <div className="cond" style={{fontSize:28,fontWeight:900,color:mc[i],whiteSpace:"nowrap"}}>{sxp.toLocaleString()}</div>
+              <div style={{fontSize:10,color:"var(--muted)",whiteSpace:"nowrap"}}>XP ({xpToScore(sxp)} คะแนน)</div>
               <GradeTag xp={sxp}/>
             </div>
           </div>
@@ -1110,19 +1114,19 @@ function RankingPage({students,myId,isTeacher=false,assignments}){
           <div style={{marginTop:16}}>
             <div style={{height:1,background:"var(--border)",marginBottom:16}}/>
             <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,marginBottom:10}}>อันดับของคุณ</div>
-            <div className="card" style={{display:"flex",alignItems:"center",gap:16,
+            <div className="card" style={{display:"flex",alignItems:"center",gap:14,flexWrap:"wrap",
               borderColor:"rgba(232,188,85,.5)",background:"rgba(232,188,85,.06)"}}>
-              <div style={{width:54,textAlign:"center"}}>
-                <span className="mono" style={{fontSize:24,color:"var(--muted)"}}>#{myRank}</span>
+              <div style={{width:40,textAlign:"center",flexShrink:0}}>
+                <span className="mono" style={{fontSize:22,color:"var(--muted)"}}>#{myRank}</span>
               </div>
-              <div style={{fontSize:40}}>{mySelf.avatar}</div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:16,fontWeight:600,color:"var(--gold)",marginBottom:6}}>{mySelf.name}</div>
+              <div style={{fontSize:36,flexShrink:0}}>{mySelf.avatar}</div>
+              <div style={{flex:1,minWidth:140}}>
+                <div style={{fontSize:16,fontWeight:600,color:"var(--gold)",marginBottom:6,whiteSpace:"nowrap"}}>{mySelf.name}</div>
                 <div style={{maxWidth:280}}><XPBar xp={eff(mySelf)} showLabel={false}/></div>
               </div>
-              <div style={{textAlign:"center"}}>
-                <div className="cond" style={{fontSize:32,fontWeight:900,color:"var(--gold)"}}>{eff(mySelf).toLocaleString()}</div>
-                <div style={{fontSize:10,color:"var(--muted)"}}>XP ({xpToScore(eff(mySelf))} คะแนน)</div>
+              <div style={{textAlign:"center",flexShrink:0}}>
+                <div className="cond" style={{fontSize:26,fontWeight:900,color:"var(--gold)",whiteSpace:"nowrap"}}>{eff(mySelf).toLocaleString()}</div>
+                <div style={{fontSize:10,color:"var(--muted)",whiteSpace:"nowrap"}}>XP ({xpToScore(eff(mySelf))} คะแนน)</div>
                 <GradeTag xp={eff(mySelf)}/>
               </div>
             </div>
@@ -1140,17 +1144,17 @@ function RankingPage({students,myId,isTeacher=false,assignments}){
     <div className="fade-up" style={{padding:20,maxWidth:900,margin:"0 auto"}}>
       <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:20}}>FULL LEADERBOARD</div>
       {sorted.map((s,i)=>{const sxp=eff(s);const r=getRank(sxp);return(
-        <div key={s.id} className="card slide-r" style={{display:"flex",alignItems:"center",gap:16,marginBottom:10,
+        <div key={s.id} className="card slide-r" style={{display:"flex",alignItems:"center",gap:14,marginBottom:10,flexWrap:"wrap",
           borderColor:i===0?"rgba(232,188,85,.28)":"var(--border)",animationDelay:`${i*.04}s`}}>
-          <div style={{width:44,textAlign:"center"}}>{i<3?<span style={{fontSize:26}}>{medals[i]}</span>:<span className="mono" style={{fontSize:20,color:"var(--muted)"}}>#{i+1}</span>}</div>
-          <div style={{fontSize:36}}>{s.avatar}</div>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontSize:15,fontWeight:600,color:"#fff",marginBottom:6}}>{s.name}</div>
+          <div style={{width:36,textAlign:"center",flexShrink:0}}>{i<3?<span style={{fontSize:24}}>{medals[i]}</span>:<span className="mono" style={{fontSize:18,color:"var(--muted)"}}>#{i+1}</span>}</div>
+          <div style={{fontSize:32,flexShrink:0}}>{s.avatar}</div>
+          <div style={{flex:1,minWidth:140}}>
+            <div style={{fontSize:15,fontWeight:600,color:"#fff",marginBottom:6,whiteSpace:"nowrap"}}>{s.name}</div>
             <div style={{maxWidth:300}}><XPBar xp={sxp} showLabel={false}/></div>
           </div>
-          <div style={{textAlign:"center"}}>
-            <div className="cond" style={{fontSize:32,fontWeight:900,color:r.color}}>{sxp.toLocaleString()}</div>
-            <div style={{fontSize:10,color:"var(--muted)"}}>XP ({xpToScore(sxp)} คะแนน)</div>
+          <div style={{textAlign:"center",flexShrink:0}}>
+            <div className="cond" style={{fontSize:26,fontWeight:900,color:r.color,whiteSpace:"nowrap"}}>{sxp.toLocaleString()}</div>
+            <div style={{fontSize:10,color:"var(--muted)",whiteSpace:"nowrap"}}>XP ({xpToScore(sxp)} คะแนน)</div>
             <GradeTag xp={sxp}/>
           </div>
         </div>
@@ -1307,7 +1311,7 @@ function GradeChart({students,assignments}){
   return(
     <div className="card card-gold" style={{marginBottom:16}}>
       <div className="cond" style={{fontSize:20,color:"var(--gold2)",letterSpacing:2,marginBottom:12}}>📊 สรุปผลการเรียนทั้งห้อง</div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(90px,1fr))",gap:10,marginBottom:14}}>
         {[{label:"นักเรียน",val:total,color:"var(--cyan)"},{label:"ผ่านเกณฑ์",val:passing,color:"var(--green)"},{label:"ไม่ผ่าน",val:total-passing,color:"var(--red)"}].map((s,i)=>(
           <div key={i} className="card" style={{textAlign:"center",padding:12,borderColor:`${s.color}38`}}>
             <div style={{fontSize:22,fontWeight:700,color:s.color}}>{s.val}</div>
@@ -2052,16 +2056,17 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents}){
               const tm=TYPE_META[a.type]||{};
               const submittedCount=students.filter(s=>s.submissions?.[a.id]).length;
               return(
-                <div key={a.id} className="card" style={{display:"flex",alignItems:"center",gap:14,marginBottom:8,borderColor:`${ch.color}25`}}>
+                <div key={a.id} className="card" style={{display:"flex",alignItems:"center",gap:14,marginBottom:8,borderColor:`${ch.color}25`,flexWrap:"wrap"}}>
                   <div style={{fontSize:24,flexShrink:0}}>{tm.icon||"📄"}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:14,fontWeight:600,color:"#fff"}}>{a.title} <span style={{fontSize:11,color:"var(--muted)",fontWeight:400}}>(เต็ม {a.xp} XP / {xpToScore(a.xp)} คะแนน)</span></div>
-                    <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>{a.desc} · {a.due}</div>
+                  <div style={{flex:1,minWidth:200}}>
+                    <div style={{fontSize:14,fontWeight:600,color:"#fff"}}>{a.title}</div>
+                    <div style={{fontSize:11,color:"var(--muted)",marginTop:2,whiteSpace:"nowrap"}}>(เต็ม {a.xp} XP / {xpToScore(a.xp)} คะแนน)</div>
+                    <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>{a.desc} · <span style={{whiteSpace:"nowrap"}}>{a.due}</span></div>
                     <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
                       <span className="badge" style={{background:"rgba(94,200,126,.12)",border:"1px solid rgba(94,200,126,.35)",color:"var(--green)"}}>✓ {submittedCount}/{students.length} คน</span>
                       {submittedCount<students.length&&<span className="badge" style={{background:"rgba(232,96,96,.1)",border:"1px solid rgba(232,96,96,.25)",color:"var(--red)"}}>⏳ ค้าง {students.length-submittedCount}</span>}
                       <button onClick={()=>setPhase(a.id,(a.phase||"before")==="before"?"after":"before")}
-                        className="badge" style={{cursor:"pointer",border:"none",
+                        className="badge" style={{cursor:"pointer",border:"none",whiteSpace:"nowrap",
                           background:(a.phase||"before")==="before"?"rgba(167,139,250,.15)":"rgba(244,114,182,.15)",
                           color:(a.phase||"before")==="before"?"#a78bfa":"#f472b6"}}
                         title="คลิกเพื่อสลับ">
@@ -2069,10 +2074,12 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents}){
                       </button>
                     </div>
                   </div>
-                  <div className="mono" style={{color:"var(--gold)",fontSize:13,flexShrink:0,textAlign:"center"}}>{a.xp} XP<div style={{fontSize:10,color:"var(--muted)"}}>{xpToScore(a.xp)} คะแนน</div></div>
-                  <button className="btn-ghost" onClick={()=>openEdit(a)} style={{padding:"7px 12px",fontSize:13,flexShrink:0}}>✏️ แก้ไข</button>
-                  <button className="btn btn-cyan" onClick={()=>openCheck(a)} style={{padding:"8px 16px",fontSize:13,flexShrink:0}}>👁 ตรวจ</button>
-                  <button className="btn btn-red" onClick={()=>del(a.id)} style={{padding:"7px 12px",fontSize:13,flexShrink:0}}>🗑</button>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",flexShrink:0}}>
+                    <div className="mono" style={{color:"var(--gold)",fontSize:13,textAlign:"center",whiteSpace:"nowrap"}}>{a.xp} XP<div style={{fontSize:10,color:"var(--muted)"}}>{xpToScore(a.xp)} คะแนน</div></div>
+                    <button className="btn-ghost" onClick={()=>openEdit(a)} style={{padding:"7px 12px",fontSize:13,flexShrink:0,whiteSpace:"nowrap"}}>✏️ แก้ไข</button>
+                    <button className="btn btn-cyan" onClick={()=>openCheck(a)} style={{padding:"8px 16px",fontSize:13,flexShrink:0,whiteSpace:"nowrap"}}>👁 ตรวจ</button>
+                    <button className="btn btn-red" onClick={()=>del(a.id)} style={{padding:"7px 12px",fontSize:13,flexShrink:0}}>🗑</button>
+                  </div>
                 </div>
               );
             })}
@@ -2184,16 +2191,17 @@ function TeacherScores({students,setStudents,assignments}){
 
   function saveEditActivity(){
     if(!editAct)return;
-    const{oldName,newName,newChapterId,newMaxXp,newPhase}=editAct;
+    const{oldName,newName,newChapterId,newMaxXp,newPhase,oldMaxXp}=editAct;
     if(!newName.trim()){toast("กรุณาใส่ชื่อกิจกรรม",true);return;}
     const newMax=Number(newMaxXp)||0;
     if(newMax<=0){toast("กรุณาใส่ XP เต็มให้ถูกต้อง",true);return;}
+    // ใช้ "เต็มเดิม" ค่าเดียวกันสำหรับทุกคน (จับไว้ตอนเปิดหน้าต่างแก้ไข) แทนการอ่านจากข้อมูลแต่ละคน
+    // กันปัญหาข้อมูลบางคนไม่มี maxXp บันทึกไว้ ซึ่งจะทำให้สัดส่วนเพี้ยนเป็น 100% ของทุกคนผิดๆ
+    const oldMax=Number(oldMaxXp)||1;
     setStudents((prev:any)=>prev.map((s:any)=>{
       let xpDiff=0;
       const newLog=(s.xpLog||[]).map((log:any)=>{
         if(log.activity!==oldName)return log;
-        // ปรับคะแนนที่ได้ของทุกคนตามสัดส่วนคะแนนเต็มใหม่โดยอัตโนมัติ (ไม่ใช่แค่ตัดคนที่ได้เกิน)
-        const oldMax=log.maxXp||log.xp||1;
         const newEarned=Math.round((log.xp||0)/oldMax*newMax);
         xpDiff+=newEarned-(log.xp||0);
         return{...log,activity:newName.trim(),chapterId:newChapterId,maxXp:newMax,xp:newEarned,phase:newPhase||"before"};
@@ -2435,7 +2443,7 @@ function TeacherScores({students,setStudents,assignments}){
                       </div>
                     </div>
                     <div style={{display:"flex",gap:8,flexShrink:0}}>
-                      <button className="btn-ghost" onClick={()=>setEditAct({oldName:act.name,newName:act.name,newChapterId:act.chapterId||"CH1",newMaxXp:act.maxXp||"",newPhase:act.phase||"before",unit:"xp"})}
+                      <button className="btn-ghost" onClick={()=>setEditAct({oldName:act.name,newName:act.name,newChapterId:act.chapterId||"CH1",newMaxXp:act.maxXp||"",oldMaxXp:act.maxXp||0,newPhase:act.phase||"before",unit:"xp"})}
                         style={{fontSize:12,padding:"6px 14px"}}>✏️ แก้ไข</button>
                       <button className="btn-ghost" onClick={()=>deleteActivity(act.name)}
                         style={{fontSize:12,padding:"6px 14px",borderColor:"rgba(232,96,96,.4)",color:"var(--red)"}}>🗑 ลบ</button>
