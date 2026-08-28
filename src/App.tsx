@@ -677,8 +677,13 @@ function ScoreBreakdown({student, assignments}){
   const after=(assignments||[]).filter(a=>(a.phase||"before")==="after");
   function earnedXP(list){return list.reduce((s,a)=>{const sub=student.submissions?.[a.id];return s+(sub?.graded?sub.xpEarned||0:0);},0);}
   const logXP=(phase)=>(student.xpLog||[]).reduce((s,l)=>(l.phase||"before")===phase?s+(l.xp||0):s,0);
-  const score1=Math.min(MAX_HALF,Math.round((earnedXP(before)+logXP("before"))/25));
-  const score2=Math.min(MAX_HALF,Math.round((earnedXP(after)+logXP("after"))/25));
+  // ใช้ XP จริงตรงๆ (ไม่ปัดเศษเป็นคะแนนก่อนแล้วคูณ 25 กลับ) ให้ตรงกับ "YOUR XP" เป๊ะเสมอ — เดิมปัดเศษ 2 รอบทำให้เลขเพี้ยนได้
+  const xp1=Math.min(875,earnedXP(before)+logXP("before"));
+  const xp2=Math.min(875,earnedXP(after)+logXP("after"));
+  const xpMidRaw=(student.midterm!==null&&student.midterm!==undefined)?Math.min(375,student.midterm*25):null;
+  const xpFinalRaw=(student.final!==null&&student.final!==undefined)?Math.min(375,student.final*25):null;
+  const score1=xpToScore(xp1);
+  const score2=xpToScore(xp2);
   const scoreMid=student.midterm, scoreFinal=student.final;
   const totalAnnounced=score1+score2+(scoreMid!==null?scoreMid:0)+(scoreFinal!==null?scoreFinal:0);
   const maxAnnounced=MAX_HALF+MAX_HALF+(scoreMid!==null?MAX_MID:0)+(scoreFinal!==null?MAX_FINAL:0);
@@ -693,12 +698,13 @@ function ScoreBreakdown({student, assignments}){
     return w.length?`💡 ควรพัฒนา: ${w.join(", ")}`:null;
   }
   const segs=[
-    {label:"เก็บ ก่อนกลางภาค",w:35,bg:"#d8b4fe",txt:"#3b0764",cbg:"rgba(216,180,254,.12)",cbr:"rgba(216,180,254,.35)",bar:"#a78bfa",score:score1,max:MAX_HALF,pct:pct1,ok:true},
-    {label:"สอบกลางภาค",w:15,bg:"#93c5fd",txt:"#1e3a8a",cbg:"rgba(147,197,253,.12)",cbr:"rgba(147,197,253,.35)",bar:"#60a5fa",score:scoreMid,max:MAX_MID,pct:pctMid,ok:scoreMid!==null},
-    {label:"เก็บ หลังกลางภาค",w:35,bg:"#f9a8d4",txt:"#500724",cbg:"rgba(249,168,212,.12)",cbr:"rgba(249,168,212,.35)",bar:"#f472b6",score:score2,max:MAX_HALF,pct:pct2,ok:true},
-    {label:"สอบปลายภาค",w:15,bg:"#fde68a",txt:"#451a03",cbg:"rgba(253,230,138,.08)",cbr:"rgba(253,230,138,.3)",bar:"#fbbf24",score:scoreFinal,max:MAX_FINAL,pct:null,ok:scoreFinal!==null},
+    {label:"เก็บ ก่อนกลางภาค",w:35,bg:"#d8b4fe",txt:"#3b0764",cbg:"rgba(216,180,254,.12)",cbr:"rgba(216,180,254,.35)",bar:"#a78bfa",score:score1,xp:xp1,max:MAX_HALF,pct:pct1,ok:true},
+    {label:"สอบกลางภาค",w:15,bg:"#93c5fd",txt:"#1e3a8a",cbg:"rgba(147,197,253,.12)",cbr:"rgba(147,197,253,.35)",bar:"#60a5fa",score:scoreMid,xp:xpMidRaw,max:MAX_MID,pct:pctMid,ok:scoreMid!==null},
+    {label:"เก็บ หลังกลางภาค",w:35,bg:"#f9a8d4",txt:"#500724",cbg:"rgba(249,168,212,.12)",cbr:"rgba(249,168,212,.35)",bar:"#f472b6",score:score2,xp:xp2,max:MAX_HALF,pct:pct2,ok:true},
+    {label:"สอบปลายภาค",w:15,bg:"#fde68a",txt:"#451a03",cbg:"rgba(253,230,138,.08)",cbr:"rgba(253,230,138,.3)",bar:"#fbbf24",score:scoreFinal,xp:xpFinalRaw,max:MAX_FINAL,pct:null,ok:scoreFinal!==null},
   ];
-  const xpAnnounced=(score1+score2+(scoreMid!==null?scoreMid:0)+(scoreFinal!==null?scoreFinal:0))*25;
+  // รวม XP จริงตรงๆ (ไม่ปัดเศษ) ให้ตรงกับ getEffectiveXP ที่ใช้โชว์ "YOUR XP" เป๊ะเสมอ
+  const xpAnnounced=xp1+xp2+(xpMidRaw||0)+(xpFinalRaw||0);
   const xpMaxAnnounced=maxAnnounced*25;
   return(
     <div className="card" style={{marginBottom:16}}>
@@ -718,7 +724,7 @@ function ScoreBreakdown({student, assignments}){
             </div>
             {s.ok&&s.score!==null
               ?<>
-                  <div style={{fontSize:12,color:"var(--text)",fontWeight:600,fontFamily:"'Share Tech Mono',monospace",whiteSpace:"nowrap"}}>{s.score*25} XP ({s.score} คะแนน)</div>
+                  <div style={{fontSize:12,color:"var(--text)",fontWeight:600,fontFamily:"'Share Tech Mono',monospace",whiteSpace:"nowrap"}}>{s.xp} XP ({s.score} คะแนน)</div>
                   <div style={{display:"flex",justifyContent:"space-between",gap:6,fontSize:10,color:"var(--muted)",marginTop:1}}>
                     <span style={{whiteSpace:"nowrap"}}>เต็ม {s.max*25} XP ({s.max} คะแนน)</span>
                     <span style={{color:s.bg,flexShrink:0}}>{s.pct}%</span>
