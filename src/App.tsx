@@ -1246,7 +1246,7 @@ function TeacherExamScores({students,setStudents}){
           {students.map(s=>(
             <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
               <span style={{fontSize:20,flexShrink:0}}>{s.avatar}</span>
-              <span style={{flex:1,fontSize:13,color:"var(--text)"}}>{s.name}</span>
+              <span style={{flex:1,fontSize:13,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{s.name}</span>
               <input type="number" min="0" max="15" value={midScores[s.id]||""} placeholder="—"
                 onChange={e=>setMidScores(p=>({...p,[s.id]:e.target.value}))}
                 style={{width:60,background:"rgba(14,26,43,.8)",border:"1px solid var(--border2)",color:"#93c5fd",borderRadius:5,padding:"6px 8px",fontFamily:"'Share Tech Mono',monospace",fontSize:15,textAlign:"center",outline:"none"}}/>
@@ -1260,7 +1260,7 @@ function TeacherExamScores({students,setStudents}){
           {students.map(s=>(
             <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
               <span style={{fontSize:20,flexShrink:0}}>{s.avatar}</span>
-              <span style={{flex:1,fontSize:13,color:"var(--text)"}}>{s.name}</span>
+              <span style={{flex:1,fontSize:13,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{s.name}</span>
               <input type="number" min="0" max="15" value={finalScores[s.id]||""} placeholder="—"
                 onChange={e=>setFinalScores(p=>({...p,[s.id]:e.target.value}))}
                 style={{width:60,background:"rgba(14,26,43,.8)",border:"1px solid var(--border2)",color:"#fde68a",borderRadius:5,padding:"6px 8px",fontFamily:"'Share Tech Mono',monospace",fontSize:15,textAlign:"center",outline:"none"}}/>
@@ -1785,7 +1785,7 @@ function TeacherStudents({students,assignments,setStudents}){
 // ─────────────────────────────────────────────
 // TEACHER: ASSIGNMENTS
 // ─────────────────────────────────────────────
-function TeacherAssignments({assignments,setAssignments,students,setStudents}){
+function TeacherAssignments({assignments,setAssignments,students,setStudents,skipNextSave,refreshFromSheet}){
   const [modal,setModal]=useState(false);
   const [form,setForm]=useState({chapterId:"CH1",title:"",xp:200,due:"",desc:"",type:"worksheet",phase:"before"});
   const [checkModal,setCheckModal]=useState(null);
@@ -1866,6 +1866,7 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents}){
   function saveXp(studentId){
     const a=checkModal;
     const newXp=Number(editXp[studentId]||0);
+    if(skipNextSave)skipNextSave(); // กันไม่ให้ auto-save ทั่วไป (ทับทั้ง array) มาเขียนทับซ้ำหลังบันทึกผ่านช่องทางปลอดภัยนี้ไปแล้ว
     setStudents(prev=>prev.map(s=>{
       if(s.id!==studentId)return s;
       const sub=s.submissions?.[a.id];
@@ -1875,6 +1876,8 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents}){
       const diff=newXp-oldXp;
       return{...s,xp:s.xp+diff,submissions:{...s.submissions,[a.id]:{...sub,xpEarned:newXp,graded:true,maxXp:sub.maxXp||a.xp}}};
     }));
+    gasGradeSubmission({studentId,assignmentId:a.id,xpEarned:newXp});
+    if(refreshFromSheet)setTimeout(()=>{refreshFromSheet();},1500);
   }
 
   const submitted=checkModal?students.filter(s=>s.submissions?.[checkModal.id]):[];
@@ -2184,12 +2187,13 @@ function TeacherResources({resources,setResources}){
 function TeacherScores({students,setStudents,assignments}){
   const [tab,setTab]=useState("add");
   useEffect(()=>{window.scrollTo(0,0);},[tab]);
-  const [maxXpAmt,setMaxXpAmt]=useState(""); // XP เต็มของกิจกรรมนี้ — ค่าเริ่มต้นของทุกคนในตาราง แก้ทีละคนได้
+  const [maxXpAmt,setMaxXpAmt]=useState(""); // XP เต็มของกิจกรรมนี้ — ตั้งครั้งเดียว ค้างไว้ได้จนกว่าจะกด "เสร็จสิ้น" (รองรับงานกลุ่มที่ให้คะแนนหลายรอบ)
   const [activityName,setActivityName]=useState("");
   const [selChapter,setSelChapter]=useState("CH1");
   const [selPhase,setSelPhase]=useState("before");
-  const [excluded,setExcluded]=useState<any>({}); // {studentId:true} = ไม่รวมคนนี้
-  const [perStuXp,setPerStuXp]=useState<any>({}); // {studentId:"ค่าที่แก้เอง"} — ถ้าไม่มีจะ fallback ไปที่ maxXpAmt
+  const [selected,setSelected]=useState<any>({}); // {studentId:true} = เลือกไว้สำหรับกลุ่มที่กำลังจะบันทึกรอบนี้
+  const [perStuXp,setPerStuXp]=useState<any>({}); // {studentId:"ค่าที่กรอก"} — ว่างเปล่าโดยดีฟอลต์ ไม่ auto-fill เต็ม
+  const [bulkFillValue,setBulkFillValue]=useState(""); // ช่องกรอกคะแนนทีเดียวใส่ให้ทุกคนที่เลือก
   const [msg,setMsg]=useState(null);
   const [editAct,setEditAct]=useState<any>(null); // {oldName, newName, newChapterId, newMaxXp}
   const [editEntry,setEditEntry]=useState<any>(null); // {activityName, studentId, studentName, xp, maxXp, isNew}
@@ -2217,10 +2221,49 @@ function TeacherScores({students,setStudents,assignments}){
     toast(`✅ แก้ไข XP ของ ${editEntry.studentName} สำเร็จ!`);
     setEditEntry(null);
   }
+  function deleteEditEntry(){
+    if(!editEntry||editEntry.isNew)return;
+    const{activityName,studentId,studentName}=editEntry;
+    setStudents((prev:any)=>prev.map((s:any)=>{
+      if(s.id!==studentId)return s;
+      const idx=(s.xpLog||[]).findIndex((l:any)=>l.activity===activityName);
+      if(idx===-1)return s;
+      const oldXp=s.xpLog[idx].xp||0;
+      const newLog=s.xpLog.filter((_:any,i:number)=>i!==idx);
+      return{...s,xp:s.xp-oldXp,xpLog:newLog};
+    }));
+    toast(`🗑 ลบ XP ของ ${studentName} ในกิจกรรมนี้แล้ว (กลับเป็นยังไม่ได้คะแนน)`);
+    setEditEntry(null);
+  }
 
   function toast(t,isErr=false){setMsg({text:t,err:isErr});setTimeout(()=>setMsg(null),3500);}
-  function xpFor(id){return perStuXp[id]!==undefined?perStuXp[id]:maxXpAmt;}
-  function includedList(){return students.filter((s:any)=>!excluded[s.id]);}
+  // เช็คว่านักเรียนคนนี้เคยได้รับ "กิจกรรมที่กำลังตั้งค่าอยู่ตอนนี้" ไปแล้วหรือยัง (สำหรับงานกลุ่ม บันทึกได้หลายรอบ)
+  function alreadyGiven(s:any){return activityName.trim()&&(s.xpLog||[]).some((l:any)=>l.activity===activityName.trim());}
+  function givenEntry(s:any){return (s.xpLog||[]).find((l:any)=>l.activity===activityName.trim());}
+  const notGivenList=students.filter((s:any)=>!alreadyGiven(s));
+  const givenList=students.filter((s:any)=>alreadyGiven(s));
+  function toggleSelect(id:string){setSelected((p:any)=>({...p,[id]:!p[id]}));}
+  function selectedIds(){return Object.keys(selected).filter(id=>selected[id]);}
+  function applyBulkFill(){
+    const v=bulkFillValue;
+    if(v===""||isNaN(Number(v)))return;
+    const ids=selectedIds();
+    setPerStuXp((p:any)=>{const n={...p};ids.forEach(id=>n[id]=v);return n;});
+  }
+  function undoDuringSession(studentId:string){
+    setStudents((prev:any)=>prev.map((s:any)=>{
+      if(s.id!==studentId)return s;
+      const idx=(s.xpLog||[]).findIndex((l:any)=>l.activity===activityName.trim());
+      if(idx===-1)return s;
+      const oldXp=s.xpLog[idx].xp||0;
+      const newLog=s.xpLog.filter((_:any,i:number)=>i!==idx);
+      return{...s,xp:s.xp-oldXp,xpLog:newLog};
+    }));
+  }
+  function finishGroup(){
+    setMaxXpAmt("");setActivityName("");setSelChapter("CH1");setSelPhase("before");
+    setSelected({});setPerStuXp({});setBulkFillValue("");
+  }
 
   function saveEditActivity(){
     if(!editAct)return;
@@ -2259,17 +2302,20 @@ function TeacherScores({students,setStudents,assignments}){
   function doAdd(){
     if(!maxXpAmt||Number(maxXpAmt)<=0){toast("กรุณาใส่ XP เต็มของกิจกรรมนี้",true);return;}
     if(!activityName.trim()){toast("กรุณาใส่ชื่องาน/กิจกรรม",true);return;}
-    const included=includedList();
-    if(included.length===0){toast("กรุณาเลือกนักเรียนอย่างน้อย 1 คน",true);return;}
+    const ids=selectedIds().filter(id=>!alreadyGiven(students.find((s:any)=>s.id===id)));
+    if(ids.length===0){toast("กรุณาเลือกนักเรียนอย่างน้อย 1 คน",true);return;}
+    // ต้องกรอกคะแนนให้ครบทุกคนที่เลือกก่อนบันทึก
+    const missing=ids.some(id=>perStuXp[id]===undefined||perStuXp[id]===""||isNaN(Number(perStuXp[id])));
+    if(missing){toast("กรุณากรอกคะแนนให้ครบทุกคนที่เลือก",true);return;}
     const today=new Date().toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
     setStudents((prev:any)=>prev.map((s:any)=>{
-      if(excluded[s.id])return s;
-      const earned=Number(xpFor(s.id))||0;
+      if(!ids.includes(s.id))return s;
+      const earned=Number(perStuXp[s.id])||0;
       const logEntry={activity:activityName.trim(),xp:earned,maxXp:Number(maxXpAmt),date:today,chapterId:selChapter,phase:selPhase};
       return{...s,xp:s.xp+earned,xpLog:[...(s.xpLog||[]),logEntry]};
     }));
-    toast(`✅ เพิ่ม XP จาก "${activityName}" ให้ ${included.length} คน!`);
-    setMaxXpAmt("");setActivityName("");setSelChapter("CH1");setSelPhase("before");setExcluded({});setPerStuXp({});
+    toast(`✅ บันทึกกลุ่มนี้ให้ ${ids.length} คนแล้ว — เลือกกลุ่มถัดไปได้เลย หรือกด "เสร็จสิ้น" ถ้าให้ครบแล้ว`);
+    setSelected({});setPerStuXp({});setBulkFillValue("");
   }
 
   const allActivities=useMemo(()=>{
@@ -2309,30 +2355,31 @@ function TeacherScores({students,setStudents,assignments}){
       {tab==="add"&&(
         <>
           <div className="card card-gold" style={{marginBottom:20}}>
-            <div className="cond" style={{fontSize:22,color:"var(--gold)",letterSpacing:2,marginBottom:18}}>⭐ เพิ่ม XP จากกิจกรรม</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:14,marginBottom:14}}>
+            <div className="cond" style={{fontSize:22,color:"var(--gold)",letterSpacing:2,marginBottom:4}}>⭐ เพิ่ม XP จากกิจกรรม</div>
+            {activityName.trim()&&<div style={{fontSize:11,color:"var(--green)",marginBottom:14}}>✓ ตั้งค่ากิจกรรมนี้ไว้แล้ว — บันทึกได้หลายกลุ่มต่อเนื่อง (เหมาะกับงานกลุ่ม) โดยไม่ต้องตั้งใหม่</div>}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:14,marginBottom:14,opacity:givenList.length>0?.55:1}}>
               <div>
                 <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>บทเรียน</label>
-                <select className="input" value={selChapter} onChange={e=>setSelChapter(e.target.value)}>
+                <select className="input" value={selChapter} onChange={e=>setSelChapter(e.target.value)} disabled={givenList.length>0}>
                   {CHAPTERS.map(c=><option key={c.id} value={c.id}>{c.icon} {c.label} {c.title}</option>)}
                 </select>
               </div>
               <div>
                 <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>ชื่อกิจกรรม</label>
                 <input className="input" value={activityName} onChange={e=>setActivityName(e.target.value)}
-                  placeholder="เช่น ตอบคำถาม, แบบทดสอบ"/>
+                  placeholder="เช่น ตอบคำถาม, แบบทดสอบ" disabled={givenList.length>0}/>
               </div>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:14,marginBottom:16}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:14,marginBottom:16,opacity:givenList.length>0?.55:1}}>
               <div>
                 <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>XP เต็ม</label>
-                <input className="input" type="number" value={maxXpAmt} onChange={e=>setMaxXpAmt(e.target.value)} placeholder="เช่น 200"/>
+                <input className="input" type="number" value={maxXpAmt} onChange={e=>setMaxXpAmt(e.target.value)} placeholder="เช่น 200" disabled={givenList.length>0}/>
               </div>
               <div>
                 <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>ช่วงเวลา</label>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
                   {[["before","🟣 ก่อนกลางภาค"],["after","🔵 หลังกลางภาค"]].map(([v,l])=>(
-                    <button key={v} onClick={()=>setSelPhase(v)} className="btn"
+                    <button key={v} onClick={()=>setSelPhase(v)} disabled={givenList.length>0} className="btn"
                       style={{background:selPhase===v?"rgba(232,188,85,.18)":"rgba(255,255,255,.05)",
                         border:`1px solid ${selPhase===v?"rgba(232,188,85,.6)":"var(--border)"}`,
                         color:selPhase===v?"var(--gold)":"var(--muted2)",
@@ -2343,23 +2390,52 @@ function TeacherScores({students,setStudents,assignments}){
               </div>
             </div>
 
+            {activityName.trim()&&givenList.length>0&&(
+              <div style={{background:"rgba(94,200,126,.08)",border:"1px solid rgba(94,200,126,.3)",borderRadius:8,
+                padding:"10px 14px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6}}>
+                <span style={{fontSize:12,color:"var(--green)"}}>✓ ให้ไปแล้ว {givenList.length} จาก {students.length} คน</span>
+                <span style={{fontSize:11,color:"var(--muted)"}}>เหลืออีก {notGivenList.length} คน</span>
+              </div>
+            )}
+
+            {givenList.length>0&&(
+              <div style={{marginBottom:14}}>
+                <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>คนที่ให้ไปแล้ว — กด ✕ เพื่อยกเลิกคืนเป็น "ยังไม่ได้คะแนน"</label>
+                <div style={{border:"1px solid var(--border)",borderRadius:8,overflow:"hidden"}}>
+                  {givenList.map((s:any,i:number)=>{const entry=givenEntry(s);return(
+                    <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",
+                      borderBottom:i<givenList.length-1?"1px solid rgba(212,168,67,.12)":"none"}}>
+                      <span style={{color:"var(--green)"}}>✓</span>
+                      <span style={{fontSize:16,flexShrink:0}}>{s.avatar}</span>
+                      <span style={{flex:1,fontSize:13,color:"var(--muted2)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name}</span>
+                      <span className="mono" style={{fontSize:13,color:"var(--green)"}}>{entry?.xp} XP</span>
+                      <button onClick={()=>undoDuringSession(s.id)} title="ยกเลิกคืนสถานะ"
+                        style={{background:"transparent",border:"1px solid rgba(232,96,96,.4)",color:"var(--red)",
+                          borderRadius:4,padding:"2px 8px",fontSize:12,cursor:"pointer"}}>✕</button>
+                    </div>
+                  );})}
+                </div>
+              </div>
+            )}
+
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
-              <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2}}>ให้คะแนนนักเรียน ({includedList().length}/{students.length} คน)</label>
-              <span style={{fontSize:11,color:"var(--muted)"}}>คลิกเลขเพื่อแก้ไข</span>
+              <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2}}>เลือกกลุ่มถัดไป ({selectedIds().length} คนที่เลือก)</label>
+              <span style={{fontSize:11,color:"var(--muted)"}}>เลือกคนก่อน แล้วกรอกคะแนนทีเดียวใส่ให้ทุกคนที่เลือก</span>
             </div>
             <div style={{maxHeight:280,overflowY:"auto",border:"1px solid var(--border)",borderRadius:8,marginBottom:10}}>
-              {students.map((s:any,i:number)=>{
-                const isExcluded=!!excluded[s.id];
-                const val=xpFor(s.id);
+              {notGivenList.map((s:any,i:number)=>{
+                const isSel=!!selected[s.id];
+                const val=perStuXp[s.id]??"";
                 return(
                   <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",
-                    borderBottom:i<students.length-1?"1px solid rgba(212,168,67,.12)":"none",opacity:isExcluded?.4:1}}>
-                    <input type="checkbox" checked={!isExcluded}
-                      onChange={()=>setExcluded((p:any)=>({...p,[s.id]:!p[s.id]}))}
+                    background:isSel?"rgba(232,188,85,.05)":"transparent",
+                    borderBottom:i<notGivenList.length-1?"1px solid rgba(212,168,67,.12)":"none"}}>
+                    <input type="checkbox" checked={isSel}
+                      onChange={()=>toggleSelect(s.id)}
                       style={{width:15,height:15,accentColor:"var(--gold)"}}/>
                     <span style={{fontSize:16,flexShrink:0}}>{s.avatar}</span>
                     <span style={{flex:1,fontSize:13,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name}</span>
-                    <input type="number" value={val} disabled={isExcluded}
+                    <input type="number" value={val} placeholder="—"
                       onChange={e=>setPerStuXp((p:any)=>({...p,[s.id]:e.target.value}))}
                       style={{width:56,background:"rgba(10,20,38,.8)",border:"1px solid rgba(232,188,85,.4)",
                         color:"var(--gold)",borderRadius:5,padding:"4px 8px",textAlign:"center",
@@ -2367,17 +2443,34 @@ function TeacherScores({students,setStudents,assignments}){
                   </div>
                 );
               })}
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:16}}>
-              <button className="btn-ghost" onClick={()=>setExcluded({})} style={{fontSize:11,padding:"7px 4px"}}>✓ เลือกทั้งหมด</button>
-              <button className="btn-ghost" onClick={()=>{const e:any={};students.forEach((s:any)=>e[s.id]=true);setExcluded(e);}} style={{fontSize:11,padding:"7px 4px"}}>⊘ ล้างทั้งหมด</button>
-              <button className="btn-ghost" onClick={()=>setPerStuXp({})} style={{fontSize:11,padding:"7px 4px"}}>↺ เท่ากับเต็มทุกคน</button>
+              {notGivenList.length===0&&<div style={{padding:16,textAlign:"center",fontSize:13,color:"var(--muted)"}}>ให้ครบทุกคนแล้ว 🎉</div>}
             </div>
 
-            <button className="btn btn-gold" onClick={doAdd}
-              style={{width:"100%",fontSize:17,padding:"15px 0",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-              <span>💾</span> บันทึกให้ {includedList().length} คนที่เลือก
-            </button>
+            {selectedIds().length>0&&(
+              <div style={{display:"flex",gap:8,alignItems:"center",background:"rgba(232,188,85,.06)",
+                border:"1px solid rgba(232,188,85,.25)",borderRadius:8,padding:"10px 12px",marginBottom:12,flexWrap:"wrap"}}>
+                <span style={{fontSize:12,color:"var(--muted2)",whiteSpace:"nowrap"}}>ให้คะแนนคนที่เลือก ({selectedIds().length} คน):</span>
+                <input type="number" value={bulkFillValue} onChange={e=>setBulkFillValue(e.target.value)} placeholder="เช่น 90"
+                  style={{width:70,background:"rgba(10,20,38,.8)",border:"1px solid rgba(232,188,85,.5)",
+                    color:"var(--gold)",borderRadius:5,padding:"6px 8px",textAlign:"center",
+                    fontFamily:"'Share Tech Mono',monospace",fontSize:14,outline:"none"}}/>
+                <button onClick={applyBulkFill} className="btn-ghost"
+                  style={{flex:1,fontSize:12,padding:"8px 4px",borderColor:"rgba(232,188,85,.5)",color:"var(--gold)",minWidth:140}}>⬇️ ใส่ให้ทุกคนที่เลือก</button>
+              </div>
+            )}
+
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:16}}>
+              <button className="btn-ghost" onClick={()=>{const sel:any={};notGivenList.forEach((s:any)=>sel[s.id]=true);setSelected(sel);}} style={{fontSize:11,padding:"7px 4px"}}>☑️ เลือกที่เหลือทั้งหมด</button>
+              <button className="btn-ghost" onClick={()=>{setSelected({});setPerStuXp({});setBulkFillValue("");}} style={{fontSize:11,padding:"7px 4px"}}>⊘ ล้างที่เลือก</button>
+            </div>
+
+            <div style={{display:"flex",gap:10}}>
+              <button className="btn btn-gold" onClick={doAdd}
+                style={{flex:2,fontSize:16,padding:"14px 0",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+                <span>💾</span> บันทึกกลุ่มนี้ ({selectedIds().length} คน)
+              </button>
+              <button className="btn-outline" onClick={finishGroup} style={{flex:1,fontSize:14}}>✅ เสร็จสิ้น</button>
+            </div>
           </div>
 
           <div className="card">
@@ -2414,6 +2507,10 @@ function TeacherScores({students,setStudents,assignments}){
               <button className="btn btn-gold" onClick={saveEditEntry} style={{flex:1,fontSize:15,padding:12}}>💾 บันทึก</button>
               <button className="btn-outline" onClick={()=>setEditEntry(null)} style={{flex:1}}>ยกเลิก</button>
             </div>
+            {!editEntry.isNew&&
+              <button onClick={deleteEditEntry} style={{width:"100%",marginTop:10,background:"transparent",
+                border:"1px solid rgba(232,96,96,.4)",color:"var(--red)",borderRadius:6,padding:"10px 0",
+                fontSize:13,cursor:"pointer"}}>🗑 ลบรายการนี้ (คืนเป็นยังไม่ได้คะแนน)</button>}
           </div>
         </div>
       )}
@@ -3226,6 +3323,19 @@ async function gasRemoveSubmission(payload){
     console.error("gasRemoveSubmission error:",e);
   }
 }
+// ให้คะแนนแบบปลอดภัยจากการชนกัน — เซิร์ฟเวอร์อ่านข้อมูลสดเองแล้วแก้ทีละคน (มี Lock กันครูหลายคน/แท็บให้คะแนนพร้อมกัน)
+async function gasGradeSubmission(payload){
+  try{
+    await fetch(GAS_URL,{
+      method:"POST",
+      mode:"no-cors",
+      headers:{"Content-Type":"text/plain"},
+      body:JSON.stringify({action:"gradeSubmission",...payload})
+    });
+  }catch(e){
+    console.error("gasGradeSubmission error:",e);
+  }
+}
 function fileToBase64(file){
   return new Promise((resolve,reject)=>{
     const reader=new FileReader();
@@ -3287,7 +3397,12 @@ export default function App(){
   const [maxXpSetting,setMaxXpSetting]=useState(2500);
   const [maxXpModal,setMaxXpModal]=useState(false);
   const [maxXpInput,setMaxXpInput]=useState("2500");
-  const saveTimer=useRef<any>(null);
+  // ตัวจับเวลา debounce แยกกันคนละตัวต่อชุดข้อมูล (นักเรียน/ใบงาน/ไฟล์) — ห้ามใช้ตัวเดียวร่วมกัน
+  // เพราะถ้าใช้ร่วมกัน พอมีการเปลี่ยนแปลงหลายอย่างใกล้เคียงกัน (เช่นตอนโหลดหน้าเว็บครั้งแรก)
+  // การรีเซ็ตตัวจับเวลาของอันหลังจะไปยกเลิกตัวจับเวลาของอันก่อนหน้าโดยไม่ตั้งใจ ทำให้การบันทึกบางอย่างไม่เกิดขึ้นจริง
+  const saveTimerStudents=useRef<any>(null);
+  const saveTimerAssignments=useRef<any>(null);
+  const saveTimerResources=useRef<any>(null);
   // ตั้งเป็น true เพื่อข้าม auto-save รอบถัดไป 1 ครั้ง — ใช้ตอนที่เพิ่งบันทึกผ่านช่องทางที่ปลอดภัยกว่าไปแล้ว (ส่ง/ลบงาน)
   // กันไม่ให้ auto-save ทั่วไป (ที่ยังทับทั้ง array) มาเขียนทับซ้ำด้วยข้อมูลที่อาจไม่ทันอัปเดต
   const skipAutoSaveRef=useRef(false);
@@ -3319,8 +3434,8 @@ export default function App(){
   // ⚠️ เซฟกลับ Sheet ได้ก็ต่อเมื่อเคยดึงข้อมูลจริงสำเร็จแล้วเท่านั้น (dataLoadOk) กันข้อมูลหาย
   useEffect(()=>{
     if(!loaded||!dataLoadOk)return;
-    clearTimeout(saveTimer.current);
-    saveTimer.current=setTimeout(async()=>{
+    clearTimeout(saveTimerStudents.current);
+    saveTimerStudents.current=setTimeout(async()=>{
       if(skipAutoSaveRef.current){skipAutoSaveRef.current=false;return;}
       await gasSave("saveStudents",students);
       await syncStudentsToSheet(students,assignments);
@@ -3329,16 +3444,16 @@ export default function App(){
 
   useEffect(()=>{
     if(!loaded||!dataLoadOk)return;
-    clearTimeout(saveTimer.current);
-    saveTimer.current=setTimeout(()=>{
+    clearTimeout(saveTimerAssignments.current);
+    saveTimerAssignments.current=setTimeout(()=>{
       gasSave("saveAssignments",assignments);
     },1000);
   },[assignments,loaded,dataLoadOk]);
 
   useEffect(()=>{
     if(!loaded||!dataLoadOk)return;
-    clearTimeout(saveTimer.current);
-    saveTimer.current=setTimeout(()=>{
+    clearTimeout(saveTimerResources.current);
+    saveTimerResources.current=setTimeout(()=>{
       gasSave("saveResources",resources);
     },1000);
   },[resources,loaded,dataLoadOk]);
@@ -3432,7 +3547,7 @@ export default function App(){
           {role==="student"&&page==="settings"     &&currentStudent&&<StudentSettings student={currentStudent} setStudents={setStudents}/>}
           {role==="teacher"&&page==="overview"     &&<TeacherOverview students={students} assignments={assignments} setPage={setPage} maxXp={maxXpSetting} onEditMaxXp={()=>{setMaxXpInput(String(maxXpSetting));setMaxXpModal(true);}}/>}
           {role==="teacher"&&page==="students"     &&<TeacherStudents students={students} assignments={assignments} setStudents={setStudents}/>}
-          {role==="teacher"&&page==="t-assignments"&&<TeacherAssignments assignments={assignments} setAssignments={setAssignments} students={students} setStudents={setStudents}/>}
+          {role==="teacher"&&page==="t-assignments"&&<TeacherAssignments assignments={assignments} setAssignments={setAssignments} students={students} setStudents={setStudents} skipNextSave={skipNextSave} refreshFromSheet={refreshFromSheet}/>}
           {role==="teacher"&&page==="t-resources"  &&<TeacherResources resources={resources} setResources={setResources}/>}
           {role==="teacher"&&page==="t-scores"     &&<TeacherScores students={students} setStudents={setStudents} assignments={assignments}/>}
           {role==="teacher"&&page==="t-exam"       &&<TeacherExamScores students={students} setStudents={setStudents}/>}
@@ -3444,4 +3559,3 @@ export default function App(){
     </>
   );
 }
-
