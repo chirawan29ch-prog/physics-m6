@@ -3276,7 +3276,9 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbwvO4vrGJ5GQJwoT6Fm0xKR
 async function gasGet(){
   try{
     // GET ไม่ต้องใช้ no-cors — GAS อนุญาต GET ปกติ
-    const r=await fetch(GAS_URL+"?action=getAll");
+    // ใส่ timestamp กันแคช + cache:"no-store" — กันเบราว์เซอร์หยิบข้อมูลเก่าที่เคย cache ไว้มาโชว์แทนของจริง
+    // (ปัญหา "รีเฟรชธรรมดาแล้วข้อมูลเก่ากลับมา" มักเกิดจากเบราว์เซอร์แคช GET request ไว้)
+    const r=await fetch(GAS_URL+"?action=getAll&_t="+Date.now(),{cache:"no-store"});
     return await r.json();
   }catch(e){
     console.error("gasGet error:",e);
@@ -3391,9 +3393,16 @@ export default function App(){
   const [resources,setResources]=useState(INIT_RESOURCES);
   const [auth,setAuth]=useState(null);
   const [loaded,setLoaded]=useState(false);
-  // dataLoadOk = true เฉพาะตอนที่ดึงข้อมูลนักเรียนจริงจาก Sheet มาได้สำเร็จอย่างน้อย 1 ครั้ง
+  // dataLoadOk = true เฉพาะตอนที่การเชื่อมต่อ Sheet โดยรวมสำเร็จอย่างน้อย 1 ครั้ง (ใช้โชว์/ซ่อนแบนเนอร์แดงเตือน)
   // ป้องกันไม่ให้ auto-save เขียนทับ Sheet ด้วยข้อมูลเปล่า (INIT_STUDENTS) ตอนที่ดึงข้อมูลไม่สำเร็จ เช่น ปัญหา CORS/เน็ตหลุด
   const [dataLoadOk,setDataLoadOk]=useState(false);
+  // แยกสถานะ "โหลดสำเร็จ" ของแต่ละชุดข้อมูลออกจากกัน (นักเรียน/ใบงาน/ไฟล์) — สำคัญมาก!
+  // เพราะเคยเจอบั๊กที่การเชื่อมต่อโดยรวมสำเร็จ (dataLoadOk=true) แต่ "ใบงาน" ดึงมาไม่ติดเฉพาะจุด (เช่น อ่าน/parse พลาดชั่วคราว)
+  // ทำให้ระบบเข้าใจผิดว่าใบงานว่างเปล่าจริง แล้วปล่อยให้บันทึกข้อมูลตัวอย่าง (INIT_ASSIGNMENTS) ทับกลับเข้าไปในชีตที่มีข้อมูลจริงอยู่แล้ว
+  // ต้องยืนยันว่าดึง "ชุดนั้นๆ" มาสำเร็จจริง (เป็น array แม้จะว่างเปล่าก็ตาม) ก่อนถึงจะอนุญาตให้บันทึกชุดนั้นกลับได้
+  const [studentsLoadOk,setStudentsLoadOk]=useState(false);
+  const [assignmentsLoadOk,setAssignmentsLoadOk]=useState(false);
+  const [resourcesLoadOk,setResourcesLoadOk]=useState(false);
   const [maxXpSetting,setMaxXpSetting]=useState(2500);
   const [maxXpModal,setMaxXpModal]=useState(false);
   const [maxXpInput,setMaxXpInput]=useState("2500");
@@ -3421,42 +3430,44 @@ export default function App(){
   useEffect(()=>{
     gasGet().then(data=>{
       if(data){
-        if(data.students&&data.students.length>0)setStudents(data.students);
-        if(data.assignments&&data.assignments.length>0)setAssignments(data.assignments);
-        if(data.resources&&data.resources.length>0)setResources(data.resources);
-        setDataLoadOk(true); // ดึงข้อมูลจาก Sheet สำเร็จ (ไม่ว่าแต่ละอย่างจะว่างหรือไม่) ปลอดภัยที่จะเซฟกลับได้
+        // ยืนยันว่าดึงมาสำเร็จจริงด้วย Array.isArray (ไม่ใช่แค่เช็ค length>0) — array ว่างเปล่าก็ถือว่า "ดึงสำเร็จ" เหมือนกัน
+        // ต่างจากเดิมที่เช็คแค่ length>0 ซึ่งพลาดแยกไม่ออกระหว่าง "ดึงสำเร็จแต่ว่างจริง" กับ "ดึงไม่สำเร็จ"
+        if(Array.isArray(data.students)){setStudents(data.students);setStudentsLoadOk(true);}
+        if(Array.isArray(data.assignments)){setAssignments(data.assignments);setAssignmentsLoadOk(true);}
+        if(Array.isArray(data.resources)){setResources(data.resources);setResourcesLoadOk(true);}
+        setDataLoadOk(true); // เชื่อมต่อ Sheet โดยรวมสำเร็จ (ใช้โชว์/ซ่อนแบนเนอร์แดงเท่านั้น)
       }
       setLoaded(true);
     });
   },[]);
 
   // debounce save — รอ 1 วินาทีหลังเปลี่ยนค่า
-  // ⚠️ เซฟกลับ Sheet ได้ก็ต่อเมื่อเคยดึงข้อมูลจริงสำเร็จแล้วเท่านั้น (dataLoadOk) กันข้อมูลหาย
+  // ⚠️ เซฟกลับ Sheet ของแต่ละชุดข้อมูล ต้องรอให้ "ชุดนั้นๆ" ยืนยันว่าดึงมาสำเร็จแล้วเท่านั้น (ไม่ใช่แค่ dataLoadOk ภาพรวม) กันข้อมูลหาย
   useEffect(()=>{
-    if(!loaded||!dataLoadOk)return;
+    if(!loaded||!studentsLoadOk)return;
     clearTimeout(saveTimerStudents.current);
     saveTimerStudents.current=setTimeout(async()=>{
       if(skipAutoSaveRef.current){skipAutoSaveRef.current=false;return;}
       await gasSave("saveStudents",students);
       await syncStudentsToSheet(students,assignments);
     },1000);
-  },[students,loaded,dataLoadOk]);
+  },[students,loaded,studentsLoadOk]);
 
   useEffect(()=>{
-    if(!loaded||!dataLoadOk)return;
+    if(!loaded||!assignmentsLoadOk)return;
     clearTimeout(saveTimerAssignments.current);
     saveTimerAssignments.current=setTimeout(()=>{
       gasSave("saveAssignments",assignments);
     },1000);
-  },[assignments,loaded,dataLoadOk]);
+  },[assignments,loaded,assignmentsLoadOk]);
 
   useEffect(()=>{
-    if(!loaded||!dataLoadOk)return;
+    if(!loaded||!resourcesLoadOk)return;
     clearTimeout(saveTimerResources.current);
     saveTimerResources.current=setTimeout(()=>{
       gasSave("saveResources",resources);
     },1000);
-  },[resources,loaded,dataLoadOk]);
+  },[resources,loaded,resourcesLoadOk]);
 
   const [page,setPage]=useState("dashboard");
   // เว็บนี้เปลี่ยนหน้าด้วย React state (ไม่ได้โหลดหน้าใหม่จริง) เบราว์เซอร์เลยไม่เด้ง scroll กลับขึ้นบนสุดให้อัตโนมัติ
