@@ -1236,7 +1236,7 @@ function TeacherExamScores({students,setStudents}){
     setSaved(true);setTimeout(()=>setSaved(false),3000);
   }
   return(
-    <div className="fade-up" style={{padding:20,maxWidth:800,margin:"0 auto"}}>
+    <div className="fade-up" style={{padding:20,maxWidth:1200,margin:"0 auto"}}>
       <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:20}}>📝 ประกาศคะแนนสอบ</div>
       {saved&&<div style={{background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.4)",borderRadius:8,padding:"12px 18px",color:"var(--green)",fontSize:14,marginBottom:16,textAlign:"center"}}>✅ บันทึกแล้ว — คะแนนแสดงในหน้านักเรียนทันที!</div>}
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16,marginBottom:16}}>
@@ -1246,7 +1246,7 @@ function TeacherExamScores({students,setStudents}){
           {students.map(s=>(
             <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
               <span style={{fontSize:20,flexShrink:0}}>{s.avatar}</span>
-              <span style={{flex:1,fontSize:13,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{s.name}</span>
+              <span style={{flex:1,fontSize:13,color:"var(--text)",textAlign:"left",whiteSpace:"nowrap",minWidth:0}}>{s.name}</span>
               <input type="number" min="0" max="15" value={midScores[s.id]||""} placeholder="—"
                 onChange={e=>setMidScores(p=>({...p,[s.id]:e.target.value}))}
                 style={{width:60,background:"rgba(14,26,43,.8)",border:"1px solid var(--border2)",color:"#93c5fd",borderRadius:5,padding:"6px 8px",fontFamily:"'Share Tech Mono',monospace",fontSize:15,textAlign:"center",outline:"none"}}/>
@@ -1260,7 +1260,7 @@ function TeacherExamScores({students,setStudents}){
           {students.map(s=>(
             <div key={s.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
               <span style={{fontSize:20,flexShrink:0}}>{s.avatar}</span>
-              <span style={{flex:1,fontSize:13,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0}}>{s.name}</span>
+              <span style={{flex:1,fontSize:13,color:"var(--text)",textAlign:"left",whiteSpace:"nowrap",minWidth:0}}>{s.name}</span>
               <input type="number" min="0" max="15" value={finalScores[s.id]||""} placeholder="—"
                 onChange={e=>setFinalScores(p=>({...p,[s.id]:e.target.value}))}
                 style={{width:60,background:"rgba(14,26,43,.8)",border:"1px solid var(--border2)",color:"#fde68a",borderRadius:5,padding:"6px 8px",fontFamily:"'Share Tech Mono',monospace",fontSize:15,textAlign:"center",outline:"none"}}/>
