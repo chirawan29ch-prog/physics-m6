@@ -44,8 +44,6 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans Thai',sans-se
 .btn-red{background:linear-gradient(135deg,#7a2020,#e86060);color:#fff;padding:9px 20px;border-radius:5px;text-transform:uppercase;font-size:13px}
 .btn-purple{background:linear-gradient(135deg,#3a2060,#aa8ff0);color:#fff;padding:10px 22px;border-radius:5px;text-transform:uppercase;font-size:14px}
 .btn-purple:hover{box-shadow:0 0 16px rgba(170,143,240,.45)}
-.btn-pink{background:linear-gradient(135deg,#901850,#d04080,#e87060);color:#fff;padding:11px 26px;border-radius:5px;text-transform:uppercase;font-size:15px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:1.5px;border:none;cursor:pointer;width:100%}
-.btn-pink:hover{box-shadow:0 0 20px rgba(200,60,100,.5)}
 .btn-outline{background:transparent;border:1px solid var(--border2);color:var(--muted2);padding:8px 18px;border-radius:5px;text-transform:uppercase;font-size:12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s}
 .btn-outline:hover{border-color:var(--gold);color:var(--gold)}
 .btn-ghost{background:rgba(255,255,255,.09);border:1px solid var(--border);color:var(--muted2);padding:7px 16px;border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:all .2s}
@@ -76,10 +74,9 @@ select.input option{background:#1e3454}
 // CONSTANTS
 // ─────────────────────────────────────────────
 const CHAPTERS = [
-  {id:"CH1",label:"หน่วยที่ 1",title:"วิทยาศาสตร์กับการแก้ปัญหา",icon:"🔬",color:"#7de8d0",bg:"rgba(125,232,208,.06)"},
-  {id:"CH2",label:"หน่วยที่ 2",title:"พันธุศาสตร์",icon:"🧬",color:"#c060e0",bg:"rgba(192,96,224,.06)"},
-  {id:"CH3",label:"หน่วยที่ 3",title:"คลื่นและแสง",icon:"🌊",color:"#f0a0c0",bg:"rgba(240,160,192,.06)"},
-  {id:"CH4",label:"หน่วยที่ 4",title:"ระบบสุริยะของเรา",icon:"🌌",color:"#f5cc70",bg:"rgba(245,204,112,.06)"},
+  {id:"CH1",label:"บทที่ 15",title:"แม่เหล็กและไฟฟ้า",icon:"⚡",color:"#4ecaae",bg:"rgba(78,202,174,.06)"},
+  {id:"CH2",label:"บทที่ 16",title:"ความร้อนและแก๊ส",icon:"🔥",color:"#e88c4a",bg:"rgba(232,140,74,.06)"},
+  {id:"CH3",label:"บทที่ 17",title:"ของแข็งและของไหล",icon:"💧",color:"#aa8ff0",bg:"rgba(170,143,240,.06)"},
 ];
 
 const XP_RANKS = [
@@ -91,10 +88,6 @@ const XP_RANKS = [
   {minXP:1375,maxXP:1499,label:"BRONZE I", grade:"1.5",color:"#ffb86a",icon:"🥉",desc:"อ่อน",      scoreRange:"55–59"},
   {minXP:1250,maxXP:1374,label:"BRONZE II",grade:"1",  color:"#ff9840",icon:"🥉",desc:"อ่อนมาก",   scoreRange:"50–54"},
   {minXP:0,   maxXP:1249,label:"IRON",     grade:"0",  color:"#9aacbf",icon:"⚙️",desc:"ไม่ผ่าน",   scoreRange:"0–49"},
-];
-const ROOMS = [
-  {id:"r1",label:"ม.3/1",color:"#f0a0c0"},
-  {id:"r2",label:"ม.3/2",color:"#7de8d0"},
 ];
 let MAX_XP = 2500;
 
@@ -121,71 +114,24 @@ function getRank(xp){return XP_RANKS.find(r=>xp>=r.minXP)||XP_RANKS[XP_RANKS.len
 // MOCK DATA
 // ─────────────────────────────────────────────
 const INIT_ASSIGNMENTS = [
-  {id:"A1",chapterId:"CH1",title:"ใบกิจกรรม 1.1: กระบวนการทางวิทยาศาสตร์",xp:200,due:"30 พ.ค. 2568",desc:"ฝึกทักษะการสังเกตและตั้งสมมติฐาน",type:"worksheet",phase:"before",createdAt:"20 พ.ค. 2568"},
-  {id:"A2",chapterId:"CH2",title:"ใบกิจกรรม 2.1: การถ่ายทอดลักษณะทางพันธุกรรม",xp:250,due:"15 มิ.ย. 2568",desc:"Mendel Laws of Inheritance",type:"worksheet",phase:"before",createdAt:"10 มิ.ย. 2568"},
-  {id:"A3",chapterId:"CH3",title:"Lab 3.1: สมบัติของคลื่น",xp:200,due:"30 มิ.ย. 2568",desc:"การสะท้อน หักเห และเลี้ยวเบน",type:"lab",phase:"before",createdAt:"25 มิ.ย. 2568"},
-  {id:"A4",chapterId:"CH4",title:"ใบกิจกรรม 4.1: ระบบสุริยะ",xp:200,due:"20 ก.ค. 2568",desc:"ดาวเคราะห์และวงโคจร",type:"worksheet",phase:"before",createdAt:"15 ก.ค. 2568"},
+  {id:"A1",chapterId:"CH1",title:"ใบกิจกรรม 1.1: กฎของโอห์ม",xp:300,due:"30 พ.ค. 2568",desc:"คำนวณแรงดัน กระแส ความต้านทาน",type:"worksheet",phase:"before",createdAt:"20 พ.ค. 2568"},
+  {id:"A2",chapterId:"CH1",title:"แบบทดสอบ 1.2: วงจรไฟฟ้า",xp:400,due:"5 มิ.ย. 2568",desc:"30 ข้อ multiple choice",type:"quiz",phase:"before",createdAt:"20 พ.ค. 2568"},
+  {id:"A3",chapterId:"CH1",title:"Lab 1.3: แม่เหล็กไฟฟ้า",xp:350,due:"12 มิ.ย. 2568",desc:"ทดลองสนามแม่เหล็ก",type:"lab",phase:"before",createdAt:"20 พ.ค. 2568"},
+  {id:"A4",chapterId:"CH2",title:"ใบกิจกรรม 2.1: กฎของแก๊ส",xp:300,due:"18 มิ.ย. 2568",desc:"Boyle's & Charles' Law",type:"worksheet",phase:"before",createdAt:"21 พ.ค. 2568"},
+  {id:"A5",chapterId:"CH2",title:"แบบทดสอบ 2.2: อุณหพลศาสตร์",xp:400,due:"24 มิ.ย. 2568",desc:"30 ข้อ multiple choice",type:"quiz",phase:"before",createdAt:"21 พ.ค. 2568"},
+  {id:"A6",chapterId:"CH3",title:"ใบกิจกรรม 3.1: แรงลอยตัว",xp:350,due:"30 มิ.ย. 2568",desc:"หลักของอาร์คิมิดีส",type:"worksheet",phase:"before",createdAt:"22 พ.ค. 2568"},
+  {id:"A7",chapterId:"CH3",title:"Lab 3.2: ของไหลและความดัน",xp:400,due:"5 ก.ค. 2568",desc:"Pascal & Bernoulli",type:"lab",phase:"before",createdAt:"22 พ.ค. 2568"},
 ];
 const INIT_RESOURCES = [];
 const INIT_STUDENTS = [
-  {id:"r1s1",  room:"r1",name:"เด็กชาย เจษฎา หมดทุกข์",           password:"18964",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s2",  room:"r1",name:"เด็กชาย เจษฎา เทียนมิ่งมาตย์",        password:"18965",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s3",  room:"r1",name:"เด็กชาย ณัฐพนธ์ สามรอดภัย",           password:"18967",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s4",  room:"r1",name:"เด็กชาย ทศพร รอดชีวี",                password:"18969",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s5",  room:"r1",name:"เด็กชาย ธนวุท ยิ้มโสตร์",             password:"18972",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s6",  room:"r1",name:"เด็กชาย ธัญวุธ แสงจันทร์",            password:"18973",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s7",  room:"r1",name:"เด็กชาย นิติภูมิ แคงสันเทียะ",        password:"18976",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s8",  room:"r1",name:"เด็กชาย พงษ์เทพ ชํานาญกิจ",           password:"18978",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s9",  room:"r1",name:"เด็กชาย วายุ พิมพ์ประสิทธิ์",         password:"18980",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s10", room:"r1",name:"เด็กชาย ศรัณย์ แก้วเขียว",            password:"18981",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s11", room:"r1",name:"เด็กชาย สุรธัส สีจัน",                password:"18983",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s12", room:"r1",name:"เด็กชาย กฤตเมธ โคตรพรม",              password:"19001",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s13", room:"r1",name:"เด็กชาย เกียรติตระกูล พิมพาจันทร์",   password:"19157",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s14", room:"r1",name:"เด็กชาย ธนภูมิ บุญนอก",              password:"19158",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s15", room:"r1",name:"เด็กชาย พสิษธนโชติ ฤกษ์ภิกขุณี",     password:"19159",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s16", room:"r1",name:"เด็กชาย กิตติพิเชษฐ์ วะศรี",         password:"19160",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s17", room:"r1",name:"เด็กชาย วันใหม่ สว่างวงค์",           password:"19174",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s18", room:"r1",name:"เด็กชาย ณัฏฐกิตติ์ กระสังข์",        password:"19217",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s19", room:"r1",name:"เด็กหญิง ชลิตา สิงควัฒน์",           password:"18986",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s20", room:"r1",name:"เด็กหญิง ณัชชยา ไชยหงษา",            password:"18988",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s21", room:"r1",name:"เด็กหญิง ณัชชา พนาพุฒิ",             password:"18989",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s22", room:"r1",name:"เด็กหญิง ณัฏฐณิชา เศรษฐไพศาลกุล",   password:"18990",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s23", room:"r1",name:"เด็กหญิง ดรุณี บุญคํา",              password:"18991",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s24", room:"r1",name:"เด็กหญิง พรพิพรรธน์ เกียรตินิรชา",   password:"18993",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s25", room:"r1",name:"เด็กหญิง พีรดา ศิลคุ้ม",             password:"18994",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s26", room:"r1",name:"เด็กหญิง วิภาดา แก้วอินัง",          password:"18996",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s27", room:"r1",name:"เด็กหญิง ศุพรรณี โพธิ์ล่าม",         password:"18997",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s28", room:"r1",name:"เด็กหญิง สรัญญา รุ่งเรือง",          password:"18998",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s29", room:"r1",name:"เด็กหญิง นันทิชา ชัยภูมิ",           password:"19027",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s30", room:"r1",name:"เด็กหญิง เปรมวิกา ฝัดค้า",           password:"19031",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s31", room:"r1",name:"เด็กหญิง กชกร มูลวงค์",              password:"19062",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r1s32", room:"r1",name:"เด็กหญิง เพชรลดา อยู่ยง",            password:"19204",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s1",  room:"r2",name:"เด็กชาย ชินกฤต สิงห์โสม",            password:"18966",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s2",  room:"r2",name:"เด็กชาย ธนกร งาทอง",                 password:"18970",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s3",  room:"r2",name:"เด็กชาย ธนรัตน์ มั่นที่สุด",         password:"18971",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s4",  room:"r2",name:"เด็กชาย ธีรศักดิ์ วุสันเทียะ",       password:"18974",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s5",  room:"r2",name:"เด็กชาย จิรานุพัฒน์ อุยวรรณัง",      password:"19002",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s6",  room:"r2",name:"เด็กชาย ตรีภพ โสดแก้ว",              password:"19005",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s7",  room:"r2",name:"เด็กชาย พงค์ศิริ ดามิลี",            password:"19011",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s8",  room:"r2",name:"เด็กชาย พันศักดิ์ พุทธศรี",          password:"19015",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s9",  room:"r2",name:"เด็กชาย ศุภรุจ พึ่งกริม",            password:"19018",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s10", room:"r2",name:"เด็กชาย กรวิชญ์ ทำดี",               password:"19162",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s11", room:"r2",name:"เด็กชาย ไกรวิชญ์ บุญเปี่ยม",         password:"19163",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s12", room:"r2",name:"เด็กชาย ชิษณุพงศ์ แก่งนอก",         password:"19164",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s13", room:"r2",name:"เด็กชาย ณัฐกิตต์ ยิ้มถาวร",         password:"19165",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s14", room:"r2",name:"เด็กชาย ศรายุทธ โตเจริญ",            password:"19168",avatar:"🧒",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s15", room:"r2",name:"เด็กหญิง โซนี คอง",                  password:"18987",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s16", room:"r2",name:"เด็กหญิง สุชานันท์ สีฉิม",           password:"18999",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s17", room:"r2",name:"เด็กหญิง ทิพย์ธิดา สนธิ",            password:"18992",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s18", room:"r2",name:"เด็กหญิง กัลธิมา โยธาหาร",           password:"19022",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s19", room:"r2",name:"เด็กหญิง ชนากานต์ แย้มโชติ",         password:"19024",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s20", room:"r2",name:"เด็กหญิง ณัฐธิดาภรณ์ พวงบุบผา",      password:"19025",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s21", room:"r2",name:"เด็กหญิง นพมาศ อยู่ยงสินธุ์",        password:"19026",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s22", room:"r2",name:"เด็กหญิง ฝน อินทะวงสา",              password:"19032",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s23", room:"r2",name:"เด็กหญิง พันธ์ชิตา ดวงดาว",          password:"19169",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s24", room:"r2",name:"เด็กหญิง เนตรนภา สร้อยจิตร",         password:"19170",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s25", room:"r2",name:"เด็กหญิง ณิราวรรณ จันทร์ซึ้ง",       password:"19171",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
-  {id:"r2s26", room:"r2",name:"เด็กหญิง วานิดา คำสุนทร",            password:"19172",avatar:"👧",xp:0,submissions:{},inventory:[],midterm:null,final:null,xpLog:[]},
+  {id:"s1", name:"นาย ศิวรัตน์ ปัทมผดุงศักดิ์", password:"18677", avatar:"👨‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null, xpLog:[]},
+  {id:"s2", name:"นางสาว สุธาสินี แสงปลาย",      password:"18583", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null, xpLog:[]},
+  {id:"s3", name:"นางสาว พิมพ์ชนก กลิ่นระรื่น",  password:"18607", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null, xpLog:[]},
+  {id:"s4", name:"นางสาว วรินรำไพ ทินภา",         password:"18608", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null, xpLog:[]},
+  {id:"s5", name:"นางสาว วริศรา อุ่นใจ",          password:"18609", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null, xpLog:[]},
+  {id:"s6", name:"นางสาว อริสา กานยะคามิน",       password:"18613", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null, xpLog:[]},
+  {id:"s7", name:"นางสาว คันธารัตน์ ยอดหล้า",     password:"18646", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null, xpLog:[]},
+  {id:"s8", name:"นางสาว สุดที่รัก รู้เจน",       password:"18804", avatar:"👩‍🎓", xp:0, submissions:{}, inventory:[], midterm:null, final:null, xpLog:[]},
 ];
 
 // ─────────────────────────────────────────────
@@ -205,310 +151,73 @@ function playAirdropSound(){
 }
 
 // ─────────────────────────────────────────────
-// VENICE BACKGROUND — สว่างขึ้น
+// PHYSICS BACKGROUND — ภาพจริง + อนุภาคสไตล์ฟิสิกส์
 // ─────────────────────────────────────────────
-// ── กลางวัน: Login หน้าเดียว ──
-function SakuraDayBackground(){
+const PHYSICS_IMG_DAY = "https://i.postimg.cc/RVGwSXJh/a8d4de59513d2b1ca0a346c0c7fd039c.jpg";
+const PHYSICS_IMG_NIGHT = "https://i.postimg.cc/13kXsqB0/wp13416836.png";
+const PHYSICS_FORMULAS = ["E=mc\u00b2","F=ma","\u03bb=h/p","v=f\u03bb","p=mv","\u0394E=hf","a=\u0394v/\u0394t"];
+
+function PhysicsDayBackground(){
   return(
     <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}>
-      {/* ภาพพื้นหลังจริง */}
       <div style={{position:"absolute",inset:0,
-        backgroundImage:`url("${img2}")`,
+        backgroundImage:`url("${PHYSICS_IMG_DAY}")`,
         backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat"}}/>
-      {/* overlay เบาๆ ให้อ่านง่าย */}
-      <div style={{position:"absolute",inset:0,background:"rgba(255,240,250,.18)"}}/>
-      {/* กลีบซากุระร่วง */}
-      {Array.from({length:20},(_,i)=>(
-        <div key={i} style={{position:"absolute",borderRadius:"50% 0",
-          width:5+i*.3,height:5+i*.3,
-          background:`rgba(255,${140+i*4},188,.82)`,
-          left:`${i*5}%`,top:"-10px",
-          animation:`fall ${3+i*.3}s linear infinite`,
-          animationDelay:`${i*.45}s`}}/>
+      <div style={{position:"absolute",inset:0,background:"rgba(10,20,45,.32)"}}/>
+      {PHYSICS_FORMULAS.slice(0,5).map((f,i)=>(
+        <div key={i} style={{position:"absolute",left:`${8+i*20}%`,top:`${14+(i%3)*22}%`,
+          fontFamily:"'Share Tech Mono',monospace",fontSize:13+(i%3)*3,color:"rgba(255,255,255,.4)",
+          animation:`float ${3+i*.4}s ease-in-out infinite`,animationDelay:`${i*.3}s`}}>{f}</div>
       ))}
-    </div>
-  );
-}
-function SakuraDayBackground_UNUSED(){
-  return(
-    <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}>
-      {/* ฟ้าสีฟ้าใส กลางวัน */}
-      <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,#87ceeb 0%,#b8e4f7 35%,#d4f0fa 55%,#e8f8e8 72%,#c8e8c0 85%,#a8d898 100%)"}}/>
-      {/* เมฆ */}
-      {[[8,6,180,60],[22,12,220,55],[55,8,160,50],[68,14,200,52],[82,7,170,48]].map(([l,t,w,h],i)=>(
-        <div key={i} style={{position:"absolute",left:`${l}%`,top:`${t}%`,width:w,height:h,
-          borderRadius:"50%",background:"rgba(255,255,255,.85)",filter:"blur(8px)"}}/>
-      ))}
-      {/* เมฆก้อนเล็ก */}
-      {[[15,10,90,35],[38,6,120,40],[72,11,100,38]].map(([l,t,w,h],i)=>(
-        <div key={i} style={{position:"absolute",left:`${l}%`,top:`${t}%`,width:w,height:h,
-          borderRadius:"50%",background:"rgba(255,255,255,.7)",filter:"blur(5px)"}}/>
-      ))}
-      {/* ภูเขาเขียว */}
-      <svg style={{position:"absolute",bottom:"30%",left:0,width:"100%"}} height="220" viewBox="0 0 1400 220" preserveAspectRatio="none">
-        <path d="M0,220 L0,150 L120,80 L240,130 L360,60 L480,120 L600,45 L720,110 L840,55 L960,125 L1080,70 L1200,130 L1320,75 L1400,115 L1400,220 Z" fill="#4a8a3a" opacity=".9"/>
-        <path d="M0,220 L0,170 L100,120 L200,155 L320,100 L440,145 L560,95 L680,140 L800,105 L920,150 L1040,115 L1160,155 L1280,120 L1400,148 L1400,220 Z" fill="#5ca048" opacity=".95"/>
-        {/* หิมะบนยอดเขา */}
-        <path d="M600,45 L622,78 L578,78 Z" fill="rgba(255,255,255,.8)"/>
-        <path d="M360,60 L380,90 L340,90 Z" fill="rgba(255,255,255,.7)"/>
-        <path d="M840,55 L860,85 L820,85 Z" fill="rgba(255,255,255,.75)"/>
-      </svg>
-      {/* พื้นหญ้า */}
-      <div style={{position:"absolute",bottom:0,left:0,right:0,height:"32%",
-        background:"linear-gradient(180deg,#6ab84a 0%,#58a03c 40%,#4a8832 100%)"}}/>
-      {/* แม่น้ำกลางวัน */}
-      <div style={{position:"absolute",bottom:"14%",left:0,right:0,height:"7%",
-        background:"linear-gradient(180deg,rgba(100,190,255,.7),rgba(70,160,240,.85))",
-        borderTop:"1px solid rgba(150,220,255,.5)"}}>
-        <div style={{position:"absolute",top:"30%",left:0,right:0,height:2,
-          background:"linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent)",
-          animation:"shimmer 2.5s ease-in-out infinite"}}/>
-      </div>
-      {/* ต้นซากุระ ซ้าย - กลางวันใบชมพูสดใส */}
-      {[{l:"0%",h:200,w:130},{l:"8%",h:260,w:170},{l:"19%",h:215,w:145}].map((t,i)=>(
-        <div key={i} style={{position:"absolute",bottom:"29%",left:t.l,width:t.w,height:t.h}}>
-          <div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",
-            width:t.w*.07,height:t.h*.4,background:"#5a3010",borderRadius:4}}/>
-          {Array.from({length:10},(_,j)=>(
-            <div key={j} style={{position:"absolute",borderRadius:"50%",
-              width:t.w*(.28+Math.random()*.3),height:t.w*(.28+Math.random()*.3),
-              left:`${Math.random()*58+12}%`,top:`${Math.random()*42}%`,
-              background:j%3===0?"rgba(255,170,200,.85)":j%3===1?"rgba(240,130,170,.8)":"rgba(255,200,220,.75)"}}/>
-          ))}
+      {[{r:64,top:"16%",right:"10%",dur:6,c:"#fff"},{r:40,bottom:"16%",left:"8%",dur:8,c:"#ffe090"}].map((o,i)=>(
+        <div key={i} style={{position:"absolute",width:o.r,height:o.r,
+          top:o.top,left:o.left,right:o.right,bottom:o.bottom,
+          border:`1px solid ${o.c}66`,borderRadius:"50%",
+          animation:`spin ${o.dur}s linear infinite`}}>
+          <div style={{position:"absolute",top:-3,left:"50%",width:6,height:6,marginLeft:-3,
+            borderRadius:"50%",background:o.c,boxShadow:`0 0 8px ${o.c}`}}/>
         </div>
       ))}
-      {/* ต้นซากุระ ขวา */}
-      {[{r:"0%",h:205,w:135},{r:"9%",h:265,w:175},{r:"20%",h:210,w:140}].map((t,i)=>(
-        <div key={i} style={{position:"absolute",bottom:"29%",right:t.r,width:t.w,height:t.h}}>
-          <div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",
-            width:t.w*.07,height:t.h*.4,background:"#5a3010",borderRadius:4}}/>
-          {Array.from({length:10},(_,j)=>(
-            <div key={j} style={{position:"absolute",borderRadius:"50%",
-              width:t.w*(.28+Math.random()*.3),height:t.w*(.28+Math.random()*.3),
-              left:`${Math.random()*58+12}%`,top:`${Math.random()*42}%`,
-              background:j%3===0?"rgba(255,160,195,.85)":j%3===1?"rgba(245,120,165,.8)":"rgba(255,195,215,.75)"}}/>
-          ))}
-        </div>
-      ))}
-      {/* กลีบซากุระร่วง */}
-      {Array.from({length:25},(_,i)=>(
-        <div key={i} style={{position:"absolute",borderRadius:"50% 0",
-          width:5+Math.random()*6,height:5+Math.random()*6,
-          background:`rgba(255,${140+Math.random()*60},${170+Math.random()*40},.85)`,
-          left:`${Math.random()*100}%`,top:`-10px`,
-          animation:`fall ${3+Math.random()*5}s linear infinite`,
-          animationDelay:`${Math.random()*8}s`}}/>
-      ))}
-      {/* แสงแดด */}
-      <div style={{position:"absolute",right:"15%",top:"6%",width:60,height:60,borderRadius:"50%",
-        background:"radial-gradient(circle,rgba(255,240,100,.9) 0%,rgba(255,200,50,.5) 50%,transparent 70%)",
-        filter:"blur(3px)",animation:"pulse 4s ease-in-out infinite"}}/>
-      {/* ดอกไม้เล็กๆ ที่พื้น */}
-      {[[12,7],[25,5],[45,8],[62,6],[78,7],[88,5]].map(([l,s],i)=>(
-        <div key={i} style={{position:"absolute",bottom:"30%",left:`${l}%`,fontSize:s+8}}>🌸</div>
-      ))}
-      <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at center,transparent 50%,rgba(0,0,0,.08) 100%)"}}/>
+      <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at center,transparent 42%,rgba(8,18,35,.4) 100%)"}}/>
     </div>
   );
 }
 
-// ── กลางคืน: หน้าอื่นๆ ──
-function SakuraBackground(){
+function PhysicsBackground(){
   return(
     <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}>
-      {/* ภาพพื้นหลังกลางคืน */}
       <div style={{position:"absolute",inset:0,
-        backgroundImage:`url("${img3}")`,
+        backgroundImage:`url("${PHYSICS_IMG_NIGHT}")`,
         backgroundSize:"cover",backgroundPosition:"center",backgroundRepeat:"no-repeat"}}/>
-      {/* overlay มืดเล็กน้อยให้อ่านง่าย */}
-      <div style={{position:"absolute",inset:0,background:"rgba(5,2,20,.45)"}}/>
-      {/* ดาวระยิบระยับ */}
-      {Array.from({length:60},(_,i)=>(
+      <div style={{position:"absolute",inset:0,background:"rgba(5,8,25,.45)"}}/>
+      {Array.from({length:50},(_,i)=>(
         <div key={i} style={{position:"absolute",borderRadius:"50%",background:"#fff",
           width:Math.random()*2+.5,height:Math.random()*2+.5,
-          left:`${(i*13)%100}%`,top:`${(i*7)%50}%`,
-          opacity:(i%5)*.15+.1,
-          animation:`pulse ${1.5+(i%5)*.5}s ease-in-out infinite`,
+          left:`${(i*17)%100}%`,top:`${(i*11)%55}%`,
+          opacity:(i%5)*.15+.1,animation:`pulse ${1.5+(i%5)*.5}s ease-in-out infinite`,
           animationDelay:`${(i%8)*.5}s`}}/>
       ))}
-      {/* กลีบร่วง */}
-      {Array.from({length:15},(_,i)=>(
-        <div key={i} style={{position:"absolute",borderRadius:"50% 0",
-          width:4+i*.4,height:4+i*.4,
-          background:"rgba(245,140,175,.75)",
-          left:`${i*7}%`,top:"-10px",
-          animation:`fall ${4.5+i*.4}s linear infinite`,
-          animationDelay:`${i*.6}s`}}/>
+      {PHYSICS_FORMULAS.map((f,i)=>(
+        <div key={i} style={{position:"absolute",left:`${(i*13+5)%90}%`,top:`${(i*17+8)%60}%`,
+          fontFamily:"'Share Tech Mono',monospace",fontSize:11+(i%3)*3,color:"rgba(167,139,250,.35)",
+          animation:`float ${3+i*.4}s ease-in-out infinite`,animationDelay:`${i*.35}s`}}>{f}</div>
       ))}
-      {/* หิ่งห้อย */}
+      {[{r:60,top:"20%",left:"12%",dur:5,c:"#5aaee8"},{r:44,top:"58%",right:"14%",dur:7,c:"#e8bc55"},{r:76,bottom:"14%",left:"48%",dur:9,c:"#f472b6"}].map((o,i)=>(
+        <div key={i} style={{position:"absolute",width:o.r,height:o.r,
+          top:o.top,left:o.left,right:o.right,bottom:o.bottom,
+          border:`1px solid ${o.c}55`,borderRadius:"50%",
+          animation:`spin ${o.dur}s linear infinite`}}>
+          <div style={{position:"absolute",top:-3,left:"50%",width:6,height:6,marginLeft:-3,
+            borderRadius:"50%",background:o.c,boxShadow:`0 0 8px ${o.c}`}}/>
+        </div>
+      ))}
       {Array.from({length:8},(_,i)=>(
-        <div key={i} style={{position:"absolute",width:4,height:4,borderRadius:"50%",
-          background:"#a8ff60",boxShadow:"0 0 6px #a8ff60",
-          left:`${15+i*10}%`,bottom:`${20+i*5}%`,
-          animation:`pulse ${1.5+i*.4}s ease-in-out infinite`,
-          animationDelay:`${i*.8}s`}}/>
+        <div key={i} style={{position:"absolute",left:`${10+i*11}%`,bottom:"6%",
+          width:4,height:4,borderRadius:"50%",background:"#a8d8ff",
+          boxShadow:"0 0 8px rgba(168,216,255,.9)",
+          animation:`float ${4+i*.5}s ease-in-out infinite`,animationDelay:`${i*.6}s`}}/>
       ))}
-    </div>
-  );
-}
-function SakuraBackground_UNUSED(){
-  return(
-    <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}>
-      <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,#050210 0%,#100530 22%,#1e0848 40%,#3d1268 56%,#8a2468 70%,#c04858 82%,#d87048 90%,#e8a848 96%,#f5d060 100%)"}}/>
-      {Array.from({length:100},(_,i)=>(
-        <div key={i} style={{position:"absolute",borderRadius:"50%",background:"#fff",
-          width:Math.random()*2+.5,height:Math.random()*2+.5,
-          left:`${Math.random()*100}%`,top:`${Math.random()*58}%`,
-          opacity:Math.random()*.8+.1,
-          animation:`pulse ${1.5+Math.random()*2.5}s ease-in-out infinite`,
-          animationDelay:`${Math.random()*5}s`}}/>
-      ))}
-      {/* จันทร์เต็มดวง */}
-      <div style={{position:"absolute",right:"11%",top:"6%",width:56,height:56,borderRadius:"50%",
-        background:"radial-gradient(circle at 35% 32%,#fffce8,#f5e878,#e8d050)",
-        boxShadow:"0 0 30px rgba(255,230,80,.6),0 0 70px rgba(255,210,60,.2)"}}/>
-      {/* ภูเขากลางคืน */}
-      <svg style={{position:"absolute",bottom:"29%",left:0,width:"100%"}} height="220" viewBox="0 0 1400 220" preserveAspectRatio="none">
-        <path d="M0,220 L0,130 L140,52 L280,118 L420,32 L560,108 L700,18 L840,95 L980,38 L1120,115 L1260,55 L1400,105 L1400,220 Z" fill="#0e0420" opacity=".95"/>
-        <path d="M420,32 L448,68 L392,68 Z" fill="rgba(240,225,255,.5)"/>
-        <path d="M700,18 L728,54 L672,54 Z" fill="rgba(240,225,255,.52)"/>
-        <path d="M980,38 L1005,70 L955,70 Z" fill="rgba(240,225,255,.45)"/>
-        {/* หน้าต่างไฟในบ้าน */}
-        {[[90,85],[155,78],[310,62],[490,70],[680,65],[870,70],[1060,62],[1195,70]].map(([x,y],i)=>(
-          <rect key={i} x={x} y={y} width="5" height="4" rx="1" fill="#ffe08066" opacity=".8"/>
-        ))}
-      </svg>
-      {/* พื้นกลางคืน */}
-      <div style={{position:"absolute",bottom:0,left:0,right:0,height:"31%",
-        background:"linear-gradient(180deg,#0e0428 0%,#080218 100%)"}}/>
-      {/* แม่น้ำกลางคืน */}
-      <div style={{position:"absolute",bottom:"13%",left:0,right:0,height:"8%",
-        background:"linear-gradient(180deg,rgba(80,30,140,.6),rgba(40,10,90,.75))",
-        borderTop:"1px solid rgba(180,100,220,.25)"}}>
-        <div style={{position:"absolute",top:0,left:0,right:0,height:2,
-          background:"linear-gradient(90deg,transparent,rgba(255,200,255,.45),transparent)",
-          animation:"shimmer 3s ease-in-out infinite"}}/>
-        {/* แสงสะท้อนจันทร์ */}
-        <div style={{position:"absolute",top:"20%",left:"45%",width:"10%",height:2,
-          background:"rgba(255,240,180,.25)",borderRadius:4,filter:"blur(2px)"}}/>
-      </div>
-      {/* ต้นซากุระ กลางคืน ซ้าย */}
-      {[{l:"0%",h:185,w:118},{l:"8%",h:248,w:158},{l:"18%",h:205,w:138}].map((t,i)=>(
-        <div key={i} style={{position:"absolute",bottom:"27%",left:t.l,width:t.w,height:t.h}}>
-          <div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",
-            width:t.w*.07,height:t.h*.42,background:"#1a0808",borderRadius:4}}/>
-          {Array.from({length:9},(_,j)=>(
-            <div key={j} style={{position:"absolute",borderRadius:"50%",
-              width:t.w*(.28+Math.random()*.28),height:t.w*(.28+Math.random()*.28),
-              left:`${Math.random()*58+12}%`,top:`${Math.random()*44}%`,
-              background:j%3===0?"rgba(220,80,130,.65)":j%3===1?"rgba(185,60,110,.6)":"rgba(240,110,155,.55)"}}/>
-          ))}
-        </div>
-      ))}
-      {/* ต้นซากุระ กลางคืน ขวา */}
-      {[{r:"0%",h:192,w:122},{r:"9%",h:255,w:162},{r:"19%",h:198,w:132}].map((t,i)=>(
-        <div key={i} style={{position:"absolute",bottom:"27%",right:t.r,width:t.w,height:t.h}}>
-          <div style={{position:"absolute",bottom:0,left:"50%",transform:"translateX(-50%)",
-            width:t.w*.07,height:t.h*.42,background:"#1a0808",borderRadius:4}}/>
-          {Array.from({length:9},(_,j)=>(
-            <div key={j} style={{position:"absolute",borderRadius:"50%",
-              width:t.w*(.28+Math.random()*.28),height:t.w*(.28+Math.random()*.28),
-              left:`${Math.random()*58+12}%`,top:`${Math.random()*44}%`,
-              background:j%3===0?"rgba(225,90,140,.68)":j%3===1?"rgba(190,65,115,.62)":"rgba(245,115,160,.58)"}}/>
-          ))}
-        </div>
-      ))}
-      {/* กลีบร่วง */}
-      {Array.from({length:18},(_,i)=>(
-        <div key={i} style={{position:"absolute",borderRadius:"50% 0",
-          width:5+Math.random()*5,height:5+Math.random()*5,
-          background:"rgba(245,140,175,.75)",
-          left:`${Math.random()*100}%`,top:"-10px",
-          animation:`fall ${5+Math.random()*6}s linear infinite`,
-          animationDelay:`${Math.random()*9}s`}}/>
-      ))}
-      {/* หิ่งห้อย */}
-      {Array.from({length:10},(_,i)=>(
-        <div key={i} style={{position:"absolute",width:4,height:4,borderRadius:"50%",
-          background:"#a8ff60",
-          left:`${12+Math.random()*76}%`,bottom:`${28+Math.random()*14}%`,
-          boxShadow:"0 0 6px #a8ff60",
-          animation:`glow ${1.5+Math.random()*2.5}s ease-in-out infinite`,
-          animationDelay:`${Math.random()*5}s`}}/>
-      ))}
-      <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at center,transparent 38%,rgba(3,1,12,.5) 100%)"}}/>
-    </div>
-  );
-}
-function VeniceBackground(){
-  return(
-    <div style={{position:"fixed",inset:0,zIndex:0,pointerEvents:"none",overflow:"hidden"}}>
-      <div style={{position:"absolute",inset:0,background:"linear-gradient(180deg,#0f1e35 0%,#162840 25%,#1e3a6a 50%,#224265 70%,#1a3050 100%)"}}/>
-      <div style={{position:"absolute",right:"18%",top:"36%",width:100,height:100,borderRadius:"50%",
-        background:"radial-gradient(circle,rgba(255,210,100,.45) 0%,rgba(255,160,60,.18) 50%,transparent 70%)",
-        filter:"blur(8px)"}}/>
-      {Array.from({length:35},(_,i)=>(
-        <div key={i} style={{position:"absolute",borderRadius:"50%",background:"#fff",
-          width:1.5,height:1.5,left:`${Math.random()*100}%`,top:`${Math.random()*40}%`,
-          opacity:Math.random()*.6+.15,animation:`pulse ${2+Math.random()*3}s ease-in-out infinite`,
-          animationDelay:`${Math.random()*4}s`}}/>
-      ))}
-      <div style={{position:"absolute",right:"8%",top:"9%",width:48,height:48,borderRadius:"50%",
-        background:"radial-gradient(circle at 38% 35%,#fff9e0,#d4c06090)",
-        boxShadow:"0 0 34px rgba(220,200,100,.5),0 0 70px rgba(220,200,100,.18)"}}/>
-      <div style={{position:"absolute",left:0,right:0,top:"60%",height:"8%",
-        background:"linear-gradient(0deg,transparent,rgba(255,170,70,.09))",filter:"blur(6px)"}}/>
-      <svg style={{position:"absolute",bottom:"26%",left:0,width:"100%"}} height="130" viewBox="0 0 1400 130" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="bldg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#1e3858"/>
-            <stop offset="100%" stopColor="#122438"/>
-          </linearGradient>
-        </defs>
-        <path d="M0,130 L0,85 L50,85 L50,65 L65,55 L80,65 L80,85 L110,85 L110,50 L120,38 L130,50 L130,85 L165,85 L165,70 L180,58 L195,70 L195,85 L220,85 L220,55 L235,42 L240,32 L245,42 L260,55 L260,85 L295,85 L295,68 L310,56 L325,68 L325,85 L350,85 L350,72 L365,62 L365,72 L385,72 L385,85 L415,85 L415,50 L425,38 L432,28 L439,38 L450,50 L450,85 L480,85 L480,62 L495,50 L510,62 L510,85 L540,85 L540,70 L555,58 L555,70 L575,70 L575,85 L605,85 L605,52 L618,40 L625,30 L632,40 L645,52 L645,85 L675,85 L675,65 L690,53 L705,65 L705,85 L735,85 L735,72 L748,62 L748,72 L765,72 L765,85 L795,85 L795,50 L808,38 L815,28 L822,38 L835,50 L835,85 L865,85 L865,65 L878,53 L893,65 L893,85 L920,85 L920,72 L933,62 L946,72 L946,85 L975,85 L975,52 L988,40 L995,30 L1002,40 L1015,52 L1015,85 L1045,85 L1045,68 L1058,56 L1073,68 L1073,85 L1100,85 L1100,55 L1113,42 L1118,32 L1123,42 L1138,55 L1138,85 L1168,85 L1168,70 L1181,58 L1196,70 L1196,85 L1220,85 L1220,50 L1233,38 L1240,28 L1247,38 L1260,50 L1260,85 L1290,85 L1290,65 L1305,53 L1320,65 L1320,85 L1350,85 L1350,72 L1365,60 L1380,72 L1380,85 L1400,85 L1400,130 Z" fill="url(#bldg)"/>
-        <ellipse cx="240" cy="30" rx="14" ry="11" fill="#1a2e48"/>
-        <ellipse cx="625" cy="28" rx="14" ry="11" fill="#1a2e48"/>
-        <ellipse cx="815" cy="26" rx="14" ry="11" fill="#1a2e48"/>
-        <ellipse cx="1240" cy="26" rx="14" ry="11" fill="#1a2e48"/>
-        <rect x="428" y="8" width="9" height="35" fill="#142438"/>
-        <polygon points="428,8 432.5,0 437,8" fill="#142438"/>
-        <rect x="1113" y="8" width="9" height="35" fill="#142438"/>
-        <polygon points="1113,8 1117.5,0 1122,8" fill="#142438"/>
-        {[[90,65],[155,72],[310,62],[490,65],[690,68],[880,68],[1065,62],[1180,65]].map(([x,y],i)=>(
-          <rect key={i} x={x} y={y} width="5" height="4" rx="1" fill="#ffe08055" opacity=".8"/>
-        ))}
-      </svg>
-      <div style={{position:"absolute",bottom:"16%",left:0,right:0,height:"10%",
-        background:"linear-gradient(180deg,rgba(36,68,120,.65) 0%,rgba(24,50,90,.45) 100%)"}}/>
-      <div style={{position:"absolute",bottom:0,left:0,right:0,height:"26%",
-        background:"linear-gradient(180deg,#162840 0%,#1e3a58 35%,#224060 70%,#1a3248 100%)",
-        borderTop:"1px solid rgba(120,180,240,.22)"}}>
-        {Array.from({length:9},(_,i)=>(
-          <div key={i} style={{position:"absolute",left:"3%",right:"3%",height:1,
-            background:`rgba(120,180,240,${.08+i*.012})`,
-            top:`${12+i*9}%`,borderRadius:2,
-            animation:`waterShimmer ${2.5+i*.4}s ease-in-out infinite`,animationDelay:`${i*.35}s`}}/>
-        ))}
-        <div style={{position:"absolute",top:0,left:"18%",width:6,height:"55%",
-          background:"linear-gradient(180deg,rgba(255,230,100,.22),transparent)",borderRadius:3,
-          animation:"waterShimmer 3s ease-in-out infinite"}}/>
-        <div style={{position:"absolute",top:0,right:"22%",width:4,height:"40%",
-          background:"linear-gradient(180deg,rgba(255,230,100,.16),transparent)",borderRadius:3,
-          animation:"waterShimmer 3.5s ease-in-out infinite",animationDelay:"1s"}}/>
-        <div style={{position:"absolute",bottom:"32%",left:"12%",animation:"gondola 4s ease-in-out infinite",fontSize:30,filter:"drop-shadow(0 3px 6px rgba(0,0,0,.6))"}}>🛶</div>
-        <div style={{position:"absolute",bottom:"22%",right:"18%",animation:"gondola 5s ease-in-out infinite",animationDelay:"1.8s",fontSize:22,opacity:.75,filter:"drop-shadow(0 3px 6px rgba(0,0,0,.6))"}}>🛶</div>
-        <div style={{position:"absolute",bottom:"28%",left:"55%",animation:"gondola 6s ease-in-out infinite",animationDelay:".8s",fontSize:18,opacity:.55,filter:"drop-shadow(0 3px 6px rgba(0,0,0,.5))"}}>🛶</div>
-      </div>
-      {[6,18,32,46,60,74,88].map((l,i)=>(
-        <div key={i} style={{position:"absolute",left:`${l}%`,bottom:"25.5%",
-          width:5,height:5,borderRadius:"50%",background:"#ffe090",
-          boxShadow:`0 0 10px rgba(255,220,80,.9),0 0 24px rgba(255,200,60,.4)`,
-          animation:`pulse ${1.8+i*.25}s ease-in-out infinite`,animationDelay:`${i*.45}s`}}/>
-      ))}
-      <div style={{position:"absolute",inset:0,opacity:.04,
-        backgroundImage:"linear-gradient(rgba(120,180,240,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(120,180,240,.5) 1px,transparent 1px)",
-        backgroundSize:"60px 60px"}}/>
-      <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at center,transparent 40%,rgba(8,18,35,.45) 100%)"}}/>
+      <div style={{position:"absolute",inset:0,background:"radial-gradient(ellipse at center,transparent 40%,rgba(5,8,25,.4) 100%)"}}/>
     </div>
   );
 }
@@ -629,7 +338,7 @@ function GradeTable(){
       <div style={{background:"rgba(232,188,85,.1)",border:"1px solid rgba(232,188,85,.3)",borderRadius:8,padding:"10px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:14}}>
         <div style={{fontSize:26}}>⚡</div>
         <div>
-          <div className="mono" style={{fontSize:13,color:"#f0a0c0",fontWeight:700,letterSpacing:1}}>1 คะแนน = 25 XP</div>
+          <div className="mono" style={{fontSize:13,color:"var(--gold2)",fontWeight:700,letterSpacing:1}}>1 คะแนน = 25 XP</div>
           <div style={{fontSize:12,color:"var(--muted2)",marginTop:2}}>XP เต็มเทอม 2,500 XP = 100 คะแนน</div>
         </div>
       </div>
@@ -728,7 +437,7 @@ function AirdropPendingBanner({airdrop,onOpen}:{airdrop:any,onOpen:()=>void}){
       padding:"10px 20px",display:"flex",alignItems:"center",gap:14}}>
       <div style={{fontSize:28,animation:"shake 1s ease-in-out infinite"}}>📦</div>
       <div style={{flex:1}}>
-        <div style={{fontSize:14,fontWeight:600,color:"#f0a0c0"}}>มี Airdrop รอคุณอยู่!</div>
+        <div style={{fontSize:14,fontWeight:600,color:"var(--gold2)"}}>มี Airdrop รอคุณอยู่!</div>
         <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>ครูส่งรางวัลให้คุณ กดเปิดเพื่อรับ</div>
       </div>
       <button className="btn btn-gold" onClick={onOpen} style={{padding:"8px 20px",fontSize:14,animation:"glow 2s ease-in-out infinite"}}>📦 เปิด!</button>
@@ -829,79 +538,61 @@ function AirdropPopup({airdrop,onClaim}:{airdrop:any,onClaim:()=>void}){
 // ─────────────────────────────────────────────
 function LoginScreen({students,onLogin}){
   const [mode,setMode]=useState("student");
-  const [selRoom,setSelRoom]=useState("r1");
   const [sel,setSel]=useState("");
   const [pw,setPw]=useState("");
   const [err,setErr]=useState("");
-  const roomStudents=students.filter((s:any)=>s.room===selRoom);
   function doLogin(){
     setErr("");
     if(mode==="teacher"){if(pw==="291241"){onLogin("teacher",null);return;}setErr("รหัสผ่านไม่ถูกต้อง");return;}
-    const s=students.find((x:any)=>x.id===sel);
+    const s=students.find(x=>x.id===sel);
     if(!s){setErr("กรุณาเลือกชื่อ");return;}
     if(s.password!==pw){setErr("รหัสผ่านไม่ถูกต้อง");return;}
     onLogin("student",s.id);
   }
   return(
     <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:24,position:"relative"}}>
-      <SakuraDayBackground/>
+      <PhysicsDayBackground/>
       <div style={{position:"relative",zIndex:1,width:"100%",maxWidth:420}}>
         <div className="fade-up" style={{textAlign:"center",marginBottom:32}}>
           <div style={{display:"flex",gap:14,justifyContent:"center",fontSize:52,marginBottom:12,animation:"float 3s ease-in-out infinite"}}>
-            <span>🔬</span><span>🧬</span><span>🌸</span>
+            <span>⚡</span><span>🔥</span><span>💧</span>
           </div>
-          <div className="cond" style={{fontSize:56,fontWeight:900,letterSpacing:6,color:"#f0a0c0",lineHeight:1,textShadow:"0 0 40px rgba(240,100,180,.6)"}}>SCIENCE</div>
-          <div className="cond" style={{fontSize:22,fontWeight:600,letterSpacing:10,color:"#8a4060",marginTop:2}}>BATTLEGROUND</div>
-          <div className="mono" style={{fontSize:11,color:"var(--muted)",marginTop:8,letterSpacing:3}}>── SAKURA SEASON 2568 ──</div>
+          <div className="cond" style={{fontSize:56,fontWeight:900,letterSpacing:6,color:"var(--gold2)",lineHeight:1,textShadow:"0 0 40px rgba(232,188,85,.6)"}}>PHYSICS</div>
+          <div className="cond" style={{fontSize:22,fontWeight:600,letterSpacing:14,color:"var(--muted2)",marginTop:2}}>BATTLEGROUND</div>
+          <div className="mono" style={{fontSize:11,color:"var(--muted)",marginTop:8,letterSpacing:3}}>── QUANTUM SEASON 2568 ──</div>
         </div>
         <div className="card fade-up" style={{animationDelay:".1s",background:"rgba(18,36,62,.9)",backdropFilter:"blur(20px)",border:"1px solid rgba(232,188,85,.3)"}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginBottom:22,background:"rgba(18,32,52,.8)",borderRadius:6,padding:4}}>
             {[["student","🧑‍🎓  นักเรียน"],["teacher","👩‍✈️  ครู"]].map(([m,l])=>(
               <button key={m} onClick={()=>{setMode(m);setErr("");setPw("");}} className="btn"
                 style={{background:mode===m?"var(--bg3)":"transparent",border:mode===m?"1px solid rgba(232,188,85,.4)":"1px solid transparent",
-                  color:mode===m?"#f0a0c0":"var(--muted)",padding:"10px",borderRadius:4,fontSize:14,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{l}</button>
+                  color:mode===m?"var(--gold)":"var(--muted)",padding:"10px",borderRadius:4,fontSize:14,fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:1}}>{l}</button>
             ))}
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:14}}>
             {mode==="student"?(
-              <>
-                <div>
-                  <label className="mono" style={{fontSize:10,color:"#8a5070",letterSpacing:2,display:"block",marginBottom:8}}>เลือกห้องเรียน</label>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
-                    {ROOMS.map((r:any)=>(
-                      <button key={r.id} onClick={()=>{setSelRoom(r.id);setSel("");}} className="btn"
-                        style={{background:selRoom===r.id?`${r.color}22`:"rgba(255,255,255,.04)",
-                          border:`1px solid ${selRoom===r.id?r.color:"var(--border)"}`,
-                          color:selRoom===r.id?r.color:"var(--muted2)",borderRadius:8,padding:"10px",
-                          fontSize:14,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:1}}>
-                        🌸 {r.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="mono" style={{fontSize:10,color:"#8a5070",letterSpacing:2,display:"block",marginBottom:8}}>SELECT PLAYER</label>
-                  <select className="input" value={sel} onChange={e=>setSel(e.target.value)} style={{background:"rgba(255,255,255,.8)",border:"1px solid rgba(200,130,170,.4)",color:"#3a1040"}}>
-                    <option value="">-- เลือกชื่อนักเรียน --</option>
-                    {roomStudents.map((s:any)=><option key={s.id} value={s.id}>{s.avatar} {s.name}</option>)}
-                  </select>
-                </div>
-              </>
+              <div>
+                <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>SELECT PLAYER</label>
+                <select className="input" value={sel} onChange={e=>setSel(e.target.value)}>
+                  <option value="">-- เลือกชื่อนักเรียน --</option>
+                  {students.map(s=><option key={s.id} value={s.id}>{s.avatar} {s.name}</option>)}
+                </select>
+              </div>
             ):(
               <div>
                 <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>COMMANDER ID</label>
-                <input className="input" value="teacher" readOnly style={{opacity:.5,background:"rgba(255,255,255,.7)",color:"#3a1040"}}/>
+                <input className="input" value="teacher" readOnly style={{opacity:.5}}/>
               </div>
             )}
             <div>
-              <label className="mono" style={{fontSize:10,color:"#8a5070",letterSpacing:2,display:"block",marginBottom:8}}>PASSWORD</label>
+              <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>PASSWORD</label>
               <input className="input" type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&doLogin()}/>
             </div>
             {err&&<div style={{background:"rgba(232,96,96,.14)",border:"1px solid rgba(232,96,96,.4)",borderRadius:5,padding:"9px 14px",color:"var(--red)",fontSize:13}}>{err}</div>}
-            <button className="btn btn-pink" onClick={doLogin} style={{marginTop:4}}>▶  DEPLOY INTO ZONE</button>
+            <button className="btn btn-gold" onClick={doLogin} style={{marginTop:4}}>▶  DEPLOY INTO ZONE</button>
           </div>
-          <div style={{height:1,background:"rgba(200,130,170,.3)",margin:"14px 0"}}/>
-          <div className="mono" style={{fontSize:10,color:"#a06080",textAlign:"center",letterSpacing:1}}>SCIENCE BATTLEGROUND © 2568 · SAKURA EDITION</div>
+          <div style={{height:1,background:"var(--border)",margin:"14px 0"}}/>
+          <div className="mono" style={{fontSize:10,color:"var(--muted)",textAlign:"center",letterSpacing:1}}>PHYSICS BATTLEGROUND © 2568 · QUANTUM EDITION</div>
         </div>
       </div>
     </div>
@@ -911,7 +602,7 @@ function LoginScreen({students,onLogin}){
 // ─────────────────────────────────────────────
 // TOP NAV
 // ─────────────────────────────────────────────
-function TopNav({user,role,page,setPage,onLogout,room,assignments}:any){
+function TopNav({user,role,page,setPage,onLogout,assignments}){
   const sTabs=[{id:"dashboard",label:"DASHBOARD"},{id:"resources",label:"บทเรียน"},{id:"assignments",label:"ส่งงาน"},{id:"ranking",label:"TOP 3"},{id:"inventory",label:"AIRDROP"},{id:"settings",label:"ตั้งค่า"}];
   const tTabs=[{id:"overview",label:"OVERVIEW"},{id:"students",label:"STUDENTS"},{id:"t-assignments",label:"📋 งาน"},{id:"t-resources",label:"📁 ไฟล์"},{id:"t-scores",label:"⭐ XP"},{id:"t-exam",label:"📝 สอบ"},{id:"t-grades",label:"📊 คะแนน"},{id:"t-airdrop",label:"📦 AIRDROP"},{id:"ranking",label:"RANKING"}];
   const tabs=role==="teacher"?tTabs:sTabs;
@@ -919,7 +610,7 @@ function TopNav({user,role,page,setPage,onLogout,room,assignments}:any){
     <div style={{position:"sticky",top:0,zIndex:100,background:"rgba(12,24,42,.96)",backdropFilter:"blur(20px)",borderBottom:"1px solid var(--border)"}}>
       <div style={{maxWidth:1200,margin:"0 auto",padding:"8px 16px"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
-          <div className="cond" style={{fontSize:"clamp(16px,4vw,20px)",fontWeight:900,color:"#f0a0c0",letterSpacing:2,flexShrink:0,whiteSpace:"nowrap",textShadow:"0 0 18px rgba(232,188,85,.5)"}}>🔬 SCI·BG</div>
+          <div className="cond" style={{fontSize:"clamp(16px,4vw,20px)",fontWeight:900,color:"var(--gold)",letterSpacing:2,flexShrink:0,whiteSpace:"nowrap",textShadow:"0 0 18px rgba(232,188,85,.5)"}}>⚡ PHYS·BG</div>
           <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
             <span style={{fontSize:20,flexShrink:0}}>{user?.avatar||"👩‍✈️"}</span>
             <div style={{lineHeight:1.3,minWidth:0}}>
@@ -933,8 +624,8 @@ function TopNav({user,role,page,setPage,onLogout,room,assignments}:any){
           {tabs.map(t=>(
             <button key={t.id} onClick={()=>setPage(t.id)} className="btn"
               style={{background:page===t.id?"rgba(232,188,85,.1)":"transparent",padding:"0 14px",height:44,
-                color:page===t.id?"#f0a0c0":"var(--muted2)",
-                borderBottom:page===t.id?"2px solid #f0a0c0":"2px solid transparent",
+                color:page===t.id?"var(--gold2)":"var(--muted2)",
+                borderBottom:page===t.id?"2px solid var(--gold)":"2px solid transparent",
                 borderRadius:0,fontSize:12,letterSpacing:1,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,flexShrink:0,whiteSpace:"nowrap"}}>
               {t.label}
             </button>
@@ -974,11 +665,11 @@ function PageHeader({page,setPage}){
         background:"rgba(24,44,74,.94)",border:"1px solid var(--border2)",
         borderRadius:8,padding:"8px 18px",backdropFilter:"blur(8px)"}}>
         <button onClick={()=>setPage(meta.back)} className="btn"
-          style={{background:"transparent",color:"#f0a0c0",fontSize:15,padding:0,letterSpacing:0,fontFamily:"'Noto Sans Thai',sans-serif",fontWeight:600}}>←</button>
+          style={{background:"transparent",color:"var(--gold2)",fontSize:15,padding:0,letterSpacing:0,fontFamily:"'Noto Sans Thai',sans-serif",fontWeight:600}}>←</button>
         <span style={{width:1,height:16,background:"var(--border2)"}}/>
         <span className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2}}>{meta.back.toUpperCase()}</span>
         <span style={{color:"var(--muted)",fontSize:12}}>›</span>
-        <span className="mono" style={{fontSize:10,color:"#f0a0c0",letterSpacing:2,fontWeight:700}}>{meta.label.toUpperCase()}</span>
+        <span className="mono" style={{fontSize:10,color:"var(--gold)",letterSpacing:2,fontWeight:700}}>{meta.label.toUpperCase()}</span>
       </div>
     </div>
   );
@@ -1053,7 +744,7 @@ function ScoreBreakdown({student, assignments}){
       </div>
       <div style={{background:"rgba(232,188,85,.09)",border:"0.5px solid rgba(232,188,85,.28)",borderRadius:8,padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div style={{fontSize:13,color:"var(--muted2)"}}>คะแนนรวมที่ประกาศแล้ว</div>
-        <div><span style={{fontSize:22,fontWeight:700,color:"#f0a0c0"}}>{xpAnnounced.toLocaleString()} XP</span><span style={{fontSize:12,color:"var(--muted)"}}> ({totalAnnounced} คะแนน) / {xpMaxAnnounced.toLocaleString()} XP ({maxAnnounced} คะแนน)</span></div>
+        <div><span style={{fontSize:22,fontWeight:700,color:"var(--gold2)"}}>{xpAnnounced.toLocaleString()} XP</span><span style={{fontSize:12,color:"var(--muted)"}}> ({totalAnnounced} คะแนน) / {xpMaxAnnounced.toLocaleString()} XP ({maxAnnounced} คะแนน)</span></div>
       </div>
       {tip()&&<div style={{background:"rgba(251,191,36,.09)",border:"0.5px solid rgba(251,191,36,.35)",borderRadius:8,padding:"9px 14px",fontSize:12,color:"#fbbf24",marginTop:8}}>{tip()}</div>}
     </div>
@@ -1082,7 +773,7 @@ function StudentDashboard({student,students,assignments,setPage,setStudents}){
       {pwModal&&(
         <div className="overlay">
           <div className="card card-gold" style={{width:"100%",maxWidth:420}}>
-            <div className="cond" style={{fontSize:22,color:"#f0a0c0",letterSpacing:2,marginBottom:20}}>🔐 เปลี่ยนรหัสผ่าน</div>
+            <div className="cond" style={{fontSize:22,color:"var(--gold)",letterSpacing:2,marginBottom:20}}>🔐 เปลี่ยนรหัสผ่าน</div>
             {([["รหัสผ่านเดิม",oldPw,setOldPw],["รหัสผ่านใหม่",newPw,setNewPw],["ยืนยันรหัสผ่านใหม่",cnf,setCnf]] as [string,string,any][]).map(([l,v,s])=>(
               <div key={l} style={{marginBottom:14}}>
                 <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>{l.toUpperCase()}</label>
@@ -1314,10 +1005,10 @@ function StudentAssignments({student,students,assignments,setStudents,skipNextSa
                       <div style={{fontSize:12,color:"var(--muted)",fontWeight:400,whiteSpace:"nowrap"}}>(เต็ม {a.xp} XP / {xpToScore(a.xp)} คะแนน)</div>
                       <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>{a.desc} · <span style={{whiteSpace:"nowrap"}}>ครบกำหนด {a.due}</span></div>
                       {sub&&<div style={{fontSize:12,marginTop:4}}>
-                        {sub.uploading?<span style={{color:"#f0a0c0"}}>⏳ กำลังอัปโหลดไฟล์...</span>:
+                        {sub.uploading?<span style={{color:"var(--gold)"}}>⏳ กำลังอัปโหลดไฟล์...</span>:
                           <a href={sub.file} target="_blank" rel="noreferrer" style={{color:"var(--cyan)"}}>🔗 ดูไฟล์งาน</a>}
                         <span style={{color:"var(--muted)",whiteSpace:"nowrap"}}> · {sub.submittedAt}</span>
-                        {!sub.uploading&&<span style={{marginLeft:8,color:sub.graded?"#f0a0c0":"var(--muted)",fontFamily:"'Share Tech Mono',monospace",fontSize:11,whiteSpace:"nowrap"}}>
+                        {!sub.uploading&&<span style={{marginLeft:8,color:sub.graded?"var(--gold)":"var(--muted)",fontFamily:"'Share Tech Mono',monospace",fontSize:11,whiteSpace:"nowrap"}}>
                           {sub.graded?`${sub.xpEarned} XP (${xpToScore(sub.xpEarned)} คะแนน)`:"⏳ รอครูตรวจ"}
                         </span>}
                       </div>}
@@ -1347,7 +1038,7 @@ function StudentAssignments({student,students,assignments,setStudents,skipNextSa
                     {myLog
                       ?<div style={{fontSize:12,marginTop:4}}>
                           <span style={{color:"var(--muted)"}}>{myLog.date}</span>
-                          <span style={{marginLeft:8,color:"#f0a0c0",fontFamily:"'Share Tech Mono',monospace",fontSize:11}}>{myLog.xp} XP ({xpToScore(myLog.xp)} คะแนน)</span>
+                          <span style={{marginLeft:8,color:"var(--gold)",fontFamily:"'Share Tech Mono',monospace",fontSize:11}}>{myLog.xp} XP ({xpToScore(myLog.xp)} คะแนน)</span>
                         </div>
                       :<div style={{fontSize:11,color:"var(--red)",marginTop:2}}>กรุณาติดต่อครู</div>
                     }
@@ -1419,8 +1110,8 @@ function RankingPage({students,myId,isTeacher=false,assignments}){
             <div style={{fontSize:36,flexShrink:0}}>{s.avatar}</div>
             <div style={{flex:1,minWidth:140}}>
               <div style={{display:"flex",gap:8,alignItems:"center",marginBottom:6,flexWrap:"wrap"}}>
-                <span style={{fontSize:16,fontWeight:600,color:isMe?"#f0a0c0":"#fff",whiteSpace:"nowrap"}}>{s.name}</span>
-                {isMe&&<span className="badge" style={{background:"rgba(232,188,85,.18)",border:"1px solid rgba(232,188,85,.45)",color:"#f0a0c0"}}>YOU</span>}
+                <span style={{fontSize:16,fontWeight:600,color:isMe?"var(--gold)":"#fff",whiteSpace:"nowrap"}}>{s.name}</span>
+                {isMe&&<span className="badge" style={{background:"rgba(232,188,85,.18)",border:"1px solid rgba(232,188,85,.45)",color:"var(--gold)"}}>YOU</span>}
               </div>
               <div style={{maxWidth:280}}><XPBar xp={sxp} showLabel={false}/></div>
             </div>
@@ -1444,17 +1135,17 @@ function RankingPage({students,myId,isTeacher=false,assignments}){
               </div>
               <div style={{fontSize:36,flexShrink:0}}>{mySelf.avatar}</div>
               <div style={{flex:1,minWidth:140}}>
-                <div style={{fontSize:16,fontWeight:600,color:"#f0a0c0",marginBottom:6,whiteSpace:"nowrap"}}>{mySelf.name}</div>
+                <div style={{fontSize:16,fontWeight:600,color:"var(--gold)",marginBottom:6,whiteSpace:"nowrap"}}>{mySelf.name}</div>
                 <div style={{maxWidth:280}}><XPBar xp={eff(mySelf)} showLabel={false}/></div>
               </div>
               <div style={{textAlign:"center",flexShrink:0}}>
-                <div className="cond" style={{fontSize:26,fontWeight:900,color:"#f0a0c0",whiteSpace:"nowrap"}}>{eff(mySelf).toLocaleString()}</div>
+                <div className="cond" style={{fontSize:26,fontWeight:900,color:"var(--gold)",whiteSpace:"nowrap"}}>{eff(mySelf).toLocaleString()}</div>
                 <div style={{fontSize:10,color:"var(--muted)",whiteSpace:"nowrap"}}>XP ({xpToScore(eff(mySelf))} คะแนน)</div>
                 <GradeTag xp={eff(mySelf)}/>
               </div>
             </div>
             <div style={{textAlign:"center",marginTop:12,fontSize:13,color:"var(--muted)"}}>
-              ห่างจากอันดับ 3 อีก <span style={{color:"#f0a0c0",fontWeight:700}}>{(eff(sorted[2])||0)-eff(mySelf)} XP</span>
+              ห่างจากอันดับ 3 อีก <span style={{color:"var(--gold)",fontWeight:700}}>{(eff(sorted[2])||0)-eff(mySelf)} XP</span>
             </div>
           </div>
         )}
@@ -1527,7 +1218,7 @@ function StudentSettings({student,setStudents}){
     <div className="fade-up" style={{padding:20,maxWidth:480,margin:"0 auto"}}>
       <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:20}}>ACCOUNT SETTINGS</div>
       <div className="card">
-        <div className="cond" style={{fontSize:20,color:"#f0a0c0",letterSpacing:2,marginBottom:20}}>🔐 เปลี่ยนรหัสผ่าน</div>
+        <div className="cond" style={{fontSize:20,color:"var(--gold)",letterSpacing:2,marginBottom:20}}>🔐 เปลี่ยนรหัสผ่าน</div>
         {([["รหัสผ่านเดิม",oldPw,setOldPw],["รหัสผ่านใหม่",newPw,setNewPw],["ยืนยันรหัสผ่านใหม่",cnf,setCnf]] as [string,string,any][]).map(([l,v,s])=>(
           <div key={l} style={{marginBottom:14}}><label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>{l.toUpperCase()}</label><input className="input" type="password" value={v} onChange={e=>s(e.target.value)} placeholder="••••••••"/></div>
         ))}
@@ -1633,7 +1324,7 @@ function GradeChart({students,assignments}){
   },[students]);
   return(
     <div className="card card-gold" style={{marginBottom:16}}>
-      <div className="cond" style={{fontSize:20,color:"#f0a0c0",letterSpacing:2,marginBottom:12}}>📊 สรุปผลการเรียนทั้งห้อง</div>
+      <div className="cond" style={{fontSize:20,color:"var(--gold2)",letterSpacing:2,marginBottom:12}}>📊 สรุปผลการเรียนทั้งห้อง</div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(90px,1fr))",gap:10,marginBottom:14}}>
         {[{label:"นักเรียน",val:total,color:"var(--cyan)"},{label:"ผ่านเกณฑ์",val:passing,color:"var(--green)"},{label:"ไม่ผ่าน",val:total-passing,color:"var(--red)"}].map((s,i)=>(
           <div key={i} className="card" style={{textAlign:"center",padding:12,borderColor:`${s.color}38`}}>
@@ -1656,11 +1347,26 @@ function GradeChart({students,assignments}){
 function TeacherOverview({students,assignments,setPage,maxXp,onEditMaxXp}:any){
   const avgXP=Math.round(students.reduce((a,s)=>a+getEffectiveXP(s,assignments),0)/students.length);
   const passing=students.filter(s=>parseFloat(getRank(getEffectiveXP(s,assignments)).grade)>0).length;
+  // ดาวน์โหลดข้อมูลนักเรียนปัจจุบันเก็บไว้ในเครื่อง — สำรองอิสระ ไม่พึ่งอะไรฝั่งเซิร์ฟเวอร์เลย
+  // ครูควรกดเก็บไว้เป็นระยะๆ โดยเฉพาะหลังให้คะแนนชุดใหญ่ๆ เผื่อไว้กู้คืนเองได้ทันทีถ้าเกิดปัญหา
+  function downloadBackup(){
+    const payload=JSON.stringify({backupAt:new Date().toISOString(),students,assignments},null,2);
+    const blob=new Blob([payload],{type:"application/json"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    const stamp=new Date().toLocaleDateString("th-TH",{day:"2-digit",month:"2-digit",year:"numeric"}).replace(/\//g,"-");
+    a.href=url;a.download=`physics-battleground-backup-${stamp}.json`;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
   return(
     <div className="fade-up" style={{padding:20,maxWidth:1000,margin:"0 auto"}}>
-      <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:16}}>COMMANDER OVERVIEW</div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+        <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3}}>COMMANDER OVERVIEW</div>
+        <button className="btn-ghost" onClick={downloadBackup} style={{fontSize:12,padding:"8px 16px",borderColor:"rgba(94,200,126,.4)",color:"var(--green)"}}>💾 ดาวน์โหลดข้อมูลสำรอง</button>
+      </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:12,marginBottom:20}}>
-        {[{icon:"👥",label:"นักเรียน",val:students.length,color:"var(--cyan)"},{icon:"✅",label:"ผ่านเกณฑ์",val:passing,color:"var(--green)"},{icon:"❌",label:"ไม่ผ่าน",val:students.length-passing,color:"var(--red)"},{icon:"⭐",label:"XP เฉลี่ย",val:avgXP.toLocaleString(),color:"#f0a0c0"},{icon:"📋",label:"งาน",val:assignments.length,color:"var(--purple)"}].map((s,i)=>(
+        {[{icon:"👥",label:"นักเรียน",val:students.length,color:"var(--cyan)"},{icon:"✅",label:"ผ่านเกณฑ์",val:passing,color:"var(--green)"},{icon:"❌",label:"ไม่ผ่าน",val:students.length-passing,color:"var(--red)"},{icon:"⭐",label:"XP เฉลี่ย",val:avgXP.toLocaleString(),color:"var(--gold)"},{icon:"📋",label:"งาน",val:assignments.length,color:"var(--purple)"}].map((s,i)=>(
           <div key={i} className="card" style={{textAlign:"center",borderColor:`${s.color}38`}}>
             <div style={{fontSize:24,marginBottom:4}}>{s.icon}</div>
             <div className="cond" style={{fontSize:34,fontWeight:900,color:s.color}}>{s.val}</div>
@@ -1674,15 +1380,15 @@ function TeacherOverview({students,assignments,setPage,maxXp,onEditMaxXp}:any){
           <span style={{fontSize:28}}>⚙️</span>
           <div>
             <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2}}>XP เต็มทั้งเทอม</div>
-            <div className="cond" style={{fontSize:28,fontWeight:900,color:"#f0a0c0"}}>{(maxXp||2500).toLocaleString()} <span style={{fontSize:14,color:"var(--muted)"}}>XP</span></div>
+            <div className="cond" style={{fontSize:28,fontWeight:900,color:"var(--gold)"}}>{(maxXp||2500).toLocaleString()} <span style={{fontSize:14,color:"var(--muted)"}}>XP</span></div>
           </div>
         </div>
-        <button className="btn-ghost" onClick={onEditMaxXp} style={{fontSize:13,padding:"9px 18px",borderColor:"rgba(232,188,85,.4)",color:"#f0a0c0"}}>✏️ แก้ไข</button>
+        <button className="btn-ghost" onClick={onEditMaxXp} style={{fontSize:13,padding:"9px 18px",borderColor:"rgba(232,188,85,.4)",color:"var(--gold)"}}>✏️ แก้ไข</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:12,marginBottom:20}}>
         {[
           {page:"t-assignments",icon:"📋",title:"เพิ่ม / จัดการงาน",color:"var(--cyan)",btn:"➕ เพิ่มงานใหม่"},
-          {page:"t-resources",  icon:"📁",title:"อัปโหลดไฟล์ความรู้",color:"#f0a0c0",btn:"⬆ อัปโหลดไฟล์"},
+          {page:"t-resources",  icon:"📁",title:"อัปโหลดไฟล์ความรู้",color:"var(--gold)",btn:"⬆ อัปโหลดไฟล์"},
           {page:"t-scores",     icon:"⭐",title:"จัดการ XP / คะแนน",color:"#82e0aa",btn:"✏️ แก้ไข XP"},
           {page:"t-airdrop",    icon:"📦",title:"ส่ง Airdrop รางวัล",color:"var(--purple)",btn:"🎲 Roll Airdrop"},
         ].map(a=>(
@@ -1852,8 +1558,8 @@ function TeacherStudents({students,assignments,setStudents,studentsLoadOk}){
       {editXpModal&&(
         <div className="overlay">
           <div className="card card-gold" style={{width:"100%",maxWidth:420}}>
-            <div className="cond" style={{fontSize:22,color:"#f0a0c0",letterSpacing:2,marginBottom:16}}>✏️ แก้ไข XP — {s.name}</div>
-            <div style={{marginBottom:6,fontSize:13,color:"var(--muted2)"}}>XP ปัจจุบัน: <span className="mono" style={{color:"#f0a0c0",fontWeight:700}}>{s.xp.toLocaleString()} XP</span></div>
+            <div className="cond" style={{fontSize:22,color:"var(--gold)",letterSpacing:2,marginBottom:16}}>✏️ แก้ไข XP — {s.name}</div>
+            <div style={{marginBottom:6,fontSize:13,color:"var(--muted2)"}}>XP ปัจจุบัน: <span className="mono" style={{color:"var(--gold)",fontWeight:700}}>{s.xp.toLocaleString()} XP</span></div>
             <div style={{marginBottom:16}}>
               <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>XP ใหม่</label>
               <input className="input" type="number" min="0" max="9999" value={newXp}
@@ -1873,7 +1579,7 @@ function TeacherStudents({students,assignments,setStudents,studentsLoadOk}){
       {editSubModal&&(
         <div className="overlay">
           <div className="card card-gold" style={{width:"100%",maxWidth:460}}>
-            <div className="cond" style={{fontSize:20,color:"#f0a0c0",letterSpacing:2,marginBottom:16}}>✏️ แก้ไขคะแนนงาน</div>
+            <div className="cond" style={{fontSize:20,color:"var(--gold)",letterSpacing:2,marginBottom:16}}>✏️ แก้ไขคะแนนงาน</div>
             <div style={{fontSize:13,color:"var(--muted2)",marginBottom:16}}>{assignments.find((a:any)=>a.id===editSubModal.assignmentId)?.title}</div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:8}}>
               <div>
@@ -1907,7 +1613,7 @@ function TeacherStudents({students,assignments,setStudents,studentsLoadOk}){
       {editLogModal&&(
         <div className="overlay">
           <div className="card card-gold" style={{width:"100%",maxWidth:420}}>
-            <div className="cond" style={{fontSize:20,color:"#f0a0c0",letterSpacing:2,marginBottom:16}}>✏️ แก้ไขกิจกรรม</div>
+            <div className="cond" style={{fontSize:20,color:"var(--gold)",letterSpacing:2,marginBottom:16}}>✏️ แก้ไขกิจกรรม</div>
             <div style={{marginBottom:14}}>
               <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>ชื่อกิจกรรม</label>
               <input className="input" value={editLogModal.activity}
@@ -1956,7 +1662,7 @@ function TeacherStudents({students,assignments,setStudents,studentsLoadOk}){
             <span>{tm.icon||"📄"}</span><span style={{flex:1,fontSize:13}}>{a.title} <span style={{color:"var(--muted)",fontSize:11}}>(เต็ม {a.xp} XP / {xpToScore(a.xp)} คะแนน)</span></span>
             {sub?<>
               <a href={sub.file} target="_blank" rel="noreferrer" style={{fontSize:11,color:"var(--cyan)"}}>🔗 ดูงาน</a>
-              <span className="mono" style={{fontSize:11,color:"#f0a0c0"}}>{sub.xpEarned||0} XP ({xpToScore(sub.xpEarned||0)} คะแนน)</span>
+              <span className="mono" style={{fontSize:11,color:"var(--gold)"}}>{sub.xpEarned||0} XP ({xpToScore(sub.xpEarned||0)} คะแนน)</span>
               <button className="btn-ghost" onClick={()=>setEditSubModal({
                 assignmentId:a.id,
                 xpEarned:sub.xpEarned||0,
@@ -2017,8 +1723,8 @@ function TeacherStudents({students,assignments,setStudents,studentsLoadOk}){
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px",background:"rgba(232,188,85,.08)",border:"1px solid rgba(232,188,85,.3)",borderRadius:8,marginTop:4}}>
                   <span style={{fontSize:13,color:"var(--muted2)"}}>รวมทั้งหมด</span>
                   <div style={{display:"flex",alignItems:"center",gap:16}}>
-                    <span className="mono" style={{fontSize:20,fontWeight:700,color:"#f0a0c0"}}>{total}/100</span>
-                    <span className="cond" style={{fontSize:28,fontWeight:900,color:parseFloat(grade||"0")>=3.5?"var(--cyan)":parseFloat(grade||"0")>=2.5?"#f0a0c0":parseFloat(grade||"0")>=1.5?"var(--orange)":"var(--red)"}}>{grade}</span>
+                    <span className="mono" style={{fontSize:20,fontWeight:700,color:"var(--gold)"}}>{total}/100</span>
+                    <span className="cond" style={{fontSize:28,fontWeight:900,color:parseFloat(grade||"0")>=3.5?"var(--cyan)":parseFloat(grade||"0")>=2.5?"var(--gold)":parseFloat(grade||"0")>=1.5?"var(--orange)":"var(--red)"}}>{grade}</span>
                   </div>
                 </div>
               ):null;
@@ -2039,7 +1745,7 @@ function TeacherStudents({students,assignments,setStudents,studentsLoadOk}){
                   <div style={{fontSize:13,fontWeight:600,color:"var(--text)"}}>{log.activity}</div>
                   <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{log.date}</div>
                 </div>
-                <div className="mono" style={{fontSize:15,fontWeight:700,color:"#f0a0c0"}}>+{log.xp} XP</div>
+                <div className="mono" style={{fontSize:15,fontWeight:700,color:"var(--gold)"}}>+{log.xp} XP</div>
                 <button className="btn-ghost" onClick={()=>setEditLogModal({idx:i,xp:log.xp,maxXp:log.maxXp||log.xp,activity:log.activity})}
                   style={{fontSize:11,padding:"4px 10px",flexShrink:0}}>✏️</button>
               </div>
@@ -2084,10 +1790,7 @@ function TeacherStudents({students,assignments,setStudents,studentsLoadOk}){
           <div style={{fontSize:40,cursor:"pointer"}} onClick={()=>setSel(s.id)}>{s.avatar}</div>
           <div style={{flex:1,cursor:"pointer"}} onClick={()=>setSel(s.id)}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <div style={{fontSize:15,fontWeight:600,color:"#fff"}}>{s.name}</div>
-                <span className="badge" style={{background:s.room==="r1"?"rgba(240,160,192,.15)":"rgba(125,232,208,.15)",border:`1px solid ${s.room==="r1"?"rgba(240,160,192,.4)":"rgba(125,232,208,.4)"}`,color:s.room==="r1"?"#f0a0c0":"#7de8d0",fontSize:8}}>{s.room==="r1"?"ม.3/1":"ม.3/2"}</span>
-              </div>
+              <div style={{fontSize:15,fontWeight:600,color:"#fff"}}>{s.name}</div>
               {hasError&&<span style={{fontSize:10,background:"rgba(239,68,68,.2)",border:"1px solid rgba(239,68,68,.4)",
                 color:"#ef4444",padding:"2px 7px",borderRadius:4,fontFamily:"'Share Tech Mono',monospace"}}>
                 ⚠ XP ดิบไม่ตรง (ควรเป็น {correct})
@@ -2116,9 +1819,7 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents,ski
   const [form,setForm]=useState({chapterId:"CH1",title:"",xp:200,due:"",desc:"",type:"worksheet",phase:"before"});
   const [checkModal,setCheckModal]=useState(null);
   const [editXp,setEditXp]=useState({});
-  const [editMaxXp,setEditMaxXp]=useState("");
-  const [selRoomA,setSelRoomA]=useState("all");
-  const filteredStudentsA=selRoomA==="all"?students:students.filter((s:any)=>s.room===selRoomA);
+  const [editMaxXp,setEditMaxXp]=useState(""); // XP เต็มของงานที่กำลังตรวจ
 
   function save(){
     if(!form.title.trim())return;
@@ -2208,15 +1909,15 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents,ski
     if(refreshFromSheet)setTimeout(()=>{refreshFromSheet();},1500);
   }
 
-  const submitted=checkModal?filteredStudentsA.filter((s:any)=>s.submissions?.[checkModal.id]):[];
-  const notSubmitted=checkModal?filteredStudentsA.filter((s:any)=>!s.submissions?.[checkModal.id]):[];
+  const submitted=checkModal?students.filter(s=>s.submissions?.[checkModal.id]):[];
+  const notSubmitted=checkModal?students.filter(s=>!s.submissions?.[checkModal.id]):[];
 
   return(
     <div className="fade-up" style={{padding:20,maxWidth:900,margin:"0 auto"}}>
       {modal&&(
         <div className="overlay">
           <div className="card card-gold" style={{width:"100%",maxWidth:500}}>
-            <div className="cond" style={{fontSize:24,color:"#f0a0c0",letterSpacing:2,marginBottom:20}}>➕ เพิ่มงาน / ภารกิจ</div>
+            <div className="cond" style={{fontSize:24,color:"var(--gold)",letterSpacing:2,marginBottom:20}}>➕ เพิ่มงาน / ภารกิจ</div>
             {[["ชื่องาน","title","text"],["XP รางวัล","xp","number"],["วันครบกำหนด","due","text"],["รายละเอียด","desc","text"]].map(([l,k,t])=>(
               <div key={k} style={{marginBottom:14}}>
                 <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:7}}>{l.toUpperCase()}</label>
@@ -2326,7 +2027,7 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents,ski
                   <input type="number" min="1" value={editMaxXp}
                     onChange={e=>setEditMaxXp(e.target.value)}
                     style={{width:80,background:"rgba(14,26,43,.8)",border:"1px solid var(--border2)",
-                      color:"#f0a0c0",borderRadius:5,padding:"5px 8px",
+                      color:"var(--gold)",borderRadius:5,padding:"5px 8px",
                       fontFamily:"'Share Tech Mono',monospace",fontSize:15,textAlign:"center",outline:"none"}}/>
                   <button className="btn btn-gold" onClick={applyNewMaxXp}
                     style={{fontSize:12,padding:"7px 16px"}}>⚖️ ปรับทั้งห้องตามสัดส่วน</button>
@@ -2351,7 +2052,7 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents,ski
                       <input type="number" value={editXp[s.id]??sub.xpEarned} min={0} max={checkModal.xp*2}
                         onChange={e=>setEditXp(p=>({...p,[s.id]:e.target.value}))}
                         style={{width:72,background:"rgba(14,26,43,.8)",border:"1px solid var(--border2)",
-                          color:"#f0a0c0",borderRadius:5,padding:"6px 8px",
+                          color:"var(--gold)",borderRadius:5,padding:"6px 8px",
                           fontFamily:"'Share Tech Mono',monospace",fontSize:15,textAlign:"center",outline:"none"}}/>
                     </div>
                     <button className="btn btn-cyan" onClick={()=>saveXp(s.id)} style={{padding:"8px 14px",fontSize:12}}>💾</button>
@@ -2372,22 +2073,12 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents,ski
         </div>
       )}
 
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14,flexWrap:"wrap",gap:8}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
         <div>
           <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3}}>MISSION CONTROL</div>
           <div className="cond" style={{fontSize:22,color:"var(--text)",marginTop:2}}>{assignments.length} งาน</div>
         </div>
         <button className="btn btn-gold" onClick={()=>setModal(true)} style={{fontSize:16,padding:"12px 28px"}}>➕ เพิ่มงานใหม่</button>
-      </div>
-      {/* Room filter */}
-      <div style={{display:"flex",gap:8,marginBottom:16}}>
-        {[{id:"all",label:"🌸 ทุกห้อง"},{id:"r1",label:"🌸 ม.3/1"},{id:"r2",label:"🌿 ม.3/2"}].map(r=>(
-          <button key={r.id} onClick={()=>setSelRoomA(r.id)} className="btn"
-            style={{background:selRoomA===r.id?"rgba(240,160,192,.2)":"rgba(255,255,255,.04)",
-              border:`1px solid ${selRoomA===r.id?"rgba(240,160,192,.5)":"var(--border)"}`,
-              color:selRoomA===r.id?"#f0a0c0":"var(--muted2)",borderRadius:8,padding:"8px 16px",
-              fontSize:13,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{r.label}</button>
-        ))}
       </div>
 
       {CHAPTERS.map(ch=>{
@@ -2402,7 +2093,7 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents,ski
             {chA.length===0&&<div style={{color:"var(--muted)",fontSize:13,padding:"8px 0"}}>ยังไม่มีงาน</div>}
             {chA.map(a=>{
               const tm=TYPE_META[a.type]||{};
-              const submittedCount=filteredStudentsA.filter((s:any)=>s.submissions?.[a.id]).length;
+              const submittedCount=students.filter(s=>s.submissions?.[a.id]).length;
               return(
                 <div key={a.id} className="card" style={{display:"flex",alignItems:"center",gap:14,marginBottom:8,borderColor:`${ch.color}25`,flexWrap:"wrap"}}>
                   <div style={{fontSize:24,flexShrink:0}}>{tm.icon||"📄"}</div>
@@ -2411,8 +2102,8 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents,ski
                     <div style={{fontSize:11,color:"var(--muted)",marginTop:2,whiteSpace:"nowrap"}}>(เต็ม {a.xp} XP / {xpToScore(a.xp)} คะแนน)</div>
                     <div style={{fontSize:12,color:"var(--muted)",marginTop:2}}>{a.desc} · <span style={{whiteSpace:"nowrap"}}>{a.due}</span></div>
                     <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
-                      <span className="badge" style={{background:"rgba(94,200,126,.12)",border:"1px solid rgba(94,200,126,.35)",color:"var(--green)"}}>✓ {filteredStudentsA.filter((s:any)=>s.submissions?.[a.id]).length}/{filteredStudentsA.length} คน</span>
-                      {filteredStudentsA.filter((s:any)=>s.submissions?.[a.id]).length<filteredStudentsA.length&&<span className="badge" style={{background:"rgba(232,96,96,.1)",border:"1px solid rgba(232,96,96,.25)",color:"var(--red)"}}>⏳ ค้าง {filteredStudentsA.length-filteredStudentsA.filter((s:any)=>s.submissions?.[a.id]).length}</span>}
+                      <span className="badge" style={{background:"rgba(94,200,126,.12)",border:"1px solid rgba(94,200,126,.35)",color:"var(--green)"}}>✓ {submittedCount}/{students.length} คน</span>
+                      {submittedCount<students.length&&<span className="badge" style={{background:"rgba(232,96,96,.1)",border:"1px solid rgba(232,96,96,.25)",color:"var(--red)"}}>⏳ ค้าง {students.length-submittedCount}</span>}
                       <button onClick={()=>setPhase(a.id,(a.phase||"before")==="before"?"after":"before")}
                         className="badge" style={{cursor:"pointer",border:"none",whiteSpace:"nowrap",
                           background:(a.phase||"before")==="before"?"rgba(167,139,250,.15)":"rgba(244,114,182,.15)",
@@ -2423,7 +2114,7 @@ function TeacherAssignments({assignments,setAssignments,students,setStudents,ski
                     </div>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",flexShrink:0}}>
-                    <div className="mono" style={{color:"#f0a0c0",fontSize:13,textAlign:"center",whiteSpace:"nowrap"}}>{a.xp} XP<div style={{fontSize:10,color:"var(--muted)"}}>{xpToScore(a.xp)} คะแนน</div></div>
+                    <div className="mono" style={{color:"var(--gold)",fontSize:13,textAlign:"center",whiteSpace:"nowrap"}}>{a.xp} XP<div style={{fontSize:10,color:"var(--muted)"}}>{xpToScore(a.xp)} คะแนน</div></div>
                     <button className="btn-ghost" onClick={()=>openEdit(a)} style={{padding:"7px 12px",fontSize:13,flexShrink:0,whiteSpace:"nowrap"}}>✏️ แก้ไข</button>
                     <button className="btn btn-cyan" onClick={()=>openCheck(a)} style={{padding:"8px 16px",fontSize:13,flexShrink:0,whiteSpace:"nowrap"}}>👁 ตรวจ</button>
                     <button className="btn btn-red" onClick={()=>del(a.id)} style={{padding:"7px 12px",fontSize:13,flexShrink:0}}>🗑</button>
@@ -2457,7 +2148,7 @@ function TeacherResources({resources,setResources}){
       {modal&&(
         <div className="overlay">
           <div className="card card-gold" style={{width:"100%",maxWidth:480}}>
-            <div className="cond" style={{fontSize:24,color:"#f0a0c0",letterSpacing:2,marginBottom:20}}>📁 เพิ่มไฟล์ความรู้</div>
+            <div className="cond" style={{fontSize:24,color:"var(--gold)",letterSpacing:2,marginBottom:20}}>📁 เพิ่มไฟล์ความรู้</div>
             <div style={{marginBottom:14}}>
               <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:7}}>บทเรียน</label>
               <select className="input" value={form.chapterId} onChange={e=>setForm(p=>({...p,chapterId:e.target.value}))}>
@@ -2525,7 +2216,6 @@ function TeacherResources({resources,setResources}){
 function TeacherScores({students,setStudents,assignments}){
   const [tab,setTab]=useState("add");
   useEffect(()=>{window.scrollTo(0,0);},[tab]);
-  const [selRoomFilter,setSelRoomFilter]=useState("all");
   const [maxXpAmt,setMaxXpAmt]=useState(""); // XP เต็มของกิจกรรมนี้ — ตั้งครั้งเดียว ค้างไว้ได้จนกว่าจะกด "เสร็จสิ้น" (รองรับงานกลุ่มที่ให้คะแนนหลายรอบ)
   const [activityName,setActivityName]=useState("");
   const [selChapter,setSelChapter]=useState("CH1");
@@ -2576,12 +2266,11 @@ function TeacherScores({students,setStudents,assignments}){
   }
 
   function toast(t,isErr=false){setMsg({text:t,err:isErr});setTimeout(()=>setMsg(null),3500);}
-  const filteredStudents=selRoomFilter==="all"?students:students.filter((s:any)=>s.room===selRoomFilter);
   // เช็คว่านักเรียนคนนี้เคยได้รับ "กิจกรรมที่กำลังตั้งค่าอยู่ตอนนี้" ไปแล้วหรือยัง (สำหรับงานกลุ่ม บันทึกได้หลายรอบ)
   function alreadyGiven(s:any){return activityName.trim()&&(s.xpLog||[]).some((l:any)=>l.activity===activityName.trim());}
   function givenEntry(s:any){return (s.xpLog||[]).find((l:any)=>l.activity===activityName.trim());}
-  const notGivenList=filteredStudents.filter((s:any)=>!alreadyGiven(s));
-  const givenList=filteredStudents.filter((s:any)=>alreadyGiven(s));
+  const notGivenList=students.filter((s:any)=>!alreadyGiven(s));
+  const givenList=students.filter((s:any)=>alreadyGiven(s));
   function toggleSelect(id:string){setSelected((p:any)=>({...p,[id]:!p[id]}));}
   function selectedIds(){return Object.keys(selected).filter(id=>selected[id]);}
   function applyBulkFill(){
@@ -2642,7 +2331,7 @@ function TeacherScores({students,setStudents,assignments}){
   function doAdd(){
     if(!maxXpAmt||Number(maxXpAmt)<=0){toast("กรุณาใส่ XP เต็มของกิจกรรมนี้",true);return;}
     if(!activityName.trim()){toast("กรุณาใส่ชื่องาน/กิจกรรม",true);return;}
-    const ids=selectedIds().filter(id=>!alreadyGiven(filteredStudents.find((s:any)=>s.id===id)));
+    const ids=selectedIds().filter(id=>!alreadyGiven(students.find((s:any)=>s.id===id)));
     if(ids.length===0){toast("กรุณาเลือกนักเรียนอย่างน้อย 1 คน",true);return;}
     // ต้องกรอกคะแนนให้ครบทุกคนที่เลือกก่อนบันทึก
     const missing=ids.some(id=>perStuXp[id]===undefined||perStuXp[id]===""||isNaN(Number(perStuXp[id])));
@@ -2674,7 +2363,7 @@ function TeacherScores({students,setStudents,assignments}){
   const tabStyle=(t)=>({
     background:tab===t?"rgba(232,188,85,.12)":"transparent",
     border:"none",borderBottom:tab===t?"2px solid var(--gold)":"2px solid transparent",
-    color:tab===t?"#f0a0c0":"var(--muted2)",
+    color:tab===t?"var(--gold2)":"var(--muted2)",
     padding:"10px 22px",cursor:"pointer",
     fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,letterSpacing:1,
     transition:"all .2s"
@@ -2683,16 +2372,6 @@ function TeacherScores({students,setStudents,assignments}){
   return(
     <div className="fade-up" style={{padding:20,maxWidth:960,margin:"0 auto"}}>
       <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:16}}>XP MANAGEMENT</div>
-      {/* Room filter */}
-      <div style={{display:"flex",gap:8,marginBottom:14}}>
-        {[{id:"all",label:"🌸 ทุกห้อง"},{id:"r1",label:"🌸 ม.3/1"},{id:"r2",label:"🌿 ม.3/2"}].map(r=>(
-          <button key={r.id} onClick={()=>setSelRoomFilter(r.id)} className="btn"
-            style={{background:selRoomFilter===r.id?"rgba(240,160,192,.2)":"rgba(255,255,255,.04)",
-              border:`1px solid ${selRoomFilter===r.id?"rgba(240,160,192,.5)":"var(--border)"}`,
-              color:selRoomFilter===r.id?"#f0a0c0":"var(--muted2)",borderRadius:8,padding:"8px 16px",
-              fontSize:13,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{r.label}</button>
-        ))}
-      </div>
       <div style={{display:"flex",borderBottom:"1px solid var(--border)",marginBottom:20}}>
         <button style={tabStyle("add")} onClick={()=>setTab("add")}>⭐ เพิ่ม XP</button>
         <button style={tabStyle("summary")} onClick={()=>setTab("summary")}>📊 สรุปรายงาน</button>
@@ -2705,7 +2384,7 @@ function TeacherScores({students,setStudents,assignments}){
       {tab==="add"&&(
         <>
           <div className="card card-gold" style={{marginBottom:20}}>
-            <div className="cond" style={{fontSize:22,color:"#f0a0c0",letterSpacing:2,marginBottom:4}}>⭐ เพิ่ม XP จากกิจกรรม</div>
+            <div className="cond" style={{fontSize:22,color:"var(--gold)",letterSpacing:2,marginBottom:4}}>⭐ เพิ่ม XP จากกิจกรรม</div>
             {activityName.trim()&&<div style={{fontSize:11,color:"var(--green)",marginBottom:14}}>✓ ตั้งค่ากิจกรรมนี้ไว้แล้ว — บันทึกได้หลายกลุ่มต่อเนื่อง (เหมาะกับงานกลุ่ม) โดยไม่ต้องตั้งใหม่</div>}
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:14,marginBottom:14,opacity:givenList.length>0?.55:1}}>
               <div>
@@ -2743,7 +2422,7 @@ function TeacherScores({students,setStudents,assignments}){
             {activityName.trim()&&givenList.length>0&&(
               <div style={{background:"rgba(94,200,126,.08)",border:"1px solid rgba(94,200,126,.3)",borderRadius:8,
                 padding:"10px 14px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:6}}>
-                <span style={{fontSize:12,color:"var(--green)"}}>✓ ให้ไปแล้ว {givenList.length} จาก {filteredStudents.length} คน</span>
+                <span style={{fontSize:12,color:"var(--green)"}}>✓ ให้ไปแล้ว {givenList.length} จาก {students.length} คน</span>
                 <span style={{fontSize:11,color:"var(--muted)"}}>เหลืออีก {notGivenList.length} คน</span>
               </div>
             )}
@@ -2782,13 +2461,13 @@ function TeacherScores({students,setStudents,assignments}){
                     borderBottom:i<notGivenList.length-1?"1px solid rgba(212,168,67,.12)":"none"}}>
                     <input type="checkbox" checked={isSel}
                       onChange={()=>toggleSelect(s.id)}
-                      style={{width:15,height:15,accentColor:"#f0a0c0"}}/>
+                      style={{width:15,height:15,accentColor:"var(--gold)"}}/>
                     <span style={{fontSize:16,flexShrink:0}}>{s.avatar}</span>
                     <span style={{flex:1,fontSize:13,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name}</span>
                     <input type="number" value={val} placeholder="—"
                       onChange={e=>setPerStuXp((p:any)=>({...p,[s.id]:e.target.value}))}
                       style={{width:56,background:"rgba(10,20,38,.8)",border:"1px solid rgba(232,188,85,.4)",
-                        color:"#f0a0c0",borderRadius:5,padding:"4px 8px",textAlign:"center",
+                        color:"var(--gold)",borderRadius:5,padding:"4px 8px",textAlign:"center",
                         fontFamily:"'Share Tech Mono',monospace",fontSize:13,outline:"none"}}/>
                   </div>
                 );
@@ -2802,10 +2481,10 @@ function TeacherScores({students,setStudents,assignments}){
                 <span style={{fontSize:12,color:"var(--muted2)",whiteSpace:"nowrap"}}>ให้คะแนนคนที่เลือก ({selectedIds().length} คน):</span>
                 <input type="number" value={bulkFillValue} onChange={e=>setBulkFillValue(e.target.value)} placeholder="เช่น 90"
                   style={{width:70,background:"rgba(10,20,38,.8)",border:"1px solid rgba(232,188,85,.5)",
-                    color:"#f0a0c0",borderRadius:5,padding:"6px 8px",textAlign:"center",
+                    color:"var(--gold)",borderRadius:5,padding:"6px 8px",textAlign:"center",
                     fontFamily:"'Share Tech Mono',monospace",fontSize:14,outline:"none"}}/>
                 <button onClick={applyBulkFill} className="btn-ghost"
-                  style={{flex:1,fontSize:12,padding:"8px 4px",borderColor:"rgba(232,188,85,.5)",color:"#f0a0c0",minWidth:140}}>⬇️ ใส่ให้ทุกคนที่เลือก</button>
+                  style={{flex:1,fontSize:12,padding:"8px 4px",borderColor:"rgba(232,188,85,.5)",color:"var(--gold)",minWidth:140}}>⬇️ ใส่ให้ทุกคนที่เลือก</button>
               </div>
             )}
 
@@ -2868,7 +2547,7 @@ function TeacherScores({students,setStudents,assignments}){
       {editAct&&(
         <div className="overlay">
           <div className="card card-gold" style={{width:"100%",maxWidth:480}}>
-            <div className="cond" style={{fontSize:22,color:"#f0a0c0",letterSpacing:2,marginBottom:20}}>✏️ แก้ไขกิจกรรม</div>
+            <div className="cond" style={{fontSize:22,color:"var(--gold)",letterSpacing:2,marginBottom:20}}>✏️ แก้ไขกิจกรรม</div>
             <div style={{marginBottom:14}}>
               <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>บทเรียน</label>
               <select className="input" value={editAct.newChapterId} onChange={e=>setEditAct({...editAct,newChapterId:e.target.value})}>
@@ -2880,7 +2559,7 @@ function TeacherScores({students,setStudents,assignments}){
               <input className="input" value={editAct.newName} onChange={e=>setEditAct({...editAct,newName:e.target.value})}
                 placeholder="ชื่อกิจกรรม"/>
             </div>
-            <div style={{marginBottom:20}}>
+            <div style={{marginBottom:14}}>
               <label className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,display:"block",marginBottom:8}}>คะแนนเต็ม</label>
               <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:8}}>
                 <input className="input" type="number" min="1"
@@ -2935,12 +2614,12 @@ function TeacherScores({students,setStudents,assignments}){
                 <div key={ai} className="card" style={{marginBottom:16,borderColor:"rgba(232,188,85,.35)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14,flexWrap:"wrap",gap:8}}>
                     <div style={{flex:1}}>
-                      <div className="cond" style={{fontSize:20,fontWeight:700,color:"#f0a0c0"}}>{act.name}</div>
+                      <div className="cond" style={{fontSize:20,fontWeight:700,color:"var(--gold2)"}}>{act.name}</div>
                       <div style={{display:"flex",gap:8,marginTop:6,flexWrap:"wrap",alignItems:"center"}}>
                         <span className="badge" style={{background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.4)",color:"var(--green)"}}>✓ ได้รับ {receivedCount} คน</span>
                         <span className="badge" style={{background:"rgba(232,96,96,.1)",border:"1px solid rgba(232,96,96,.28)",color:"var(--red)"}}>— ยังไม่ได้ {students.length-receivedCount} คน</span>
                         <span className="badge" style={{background:act.phase==="after"?"rgba(244,114,182,.14)":"rgba(167,139,250,.14)",border:`1px solid ${act.phase==="after"?"rgba(244,114,182,.4)":"rgba(167,139,250,.4)"}`,color:act.phase==="after"?"#f472b6":"#a78bfa"}}>{act.phase==="after"?"🔵 หลังกลางภาค":"🟣 ก่อนกลางภาค"}</span>
-                        <span className="mono" style={{fontSize:11,color:"#f0a0c0",padding:"3px 8px"}}>รวม {totalGiven.toLocaleString()} XP ({xpToScore(totalGiven)} คะแนน)</span>
+                        <span className="mono" style={{fontSize:11,color:"var(--gold)",padding:"3px 8px"}}>รวม {totalGiven.toLocaleString()} XP ({xpToScore(totalGiven)} คะแนน)</span>
                         <span className="mono" style={{fontSize:11,color:"var(--muted)",padding:"3px 8px"}}>เต็มคนละ {act.maxXp.toLocaleString()} XP ({xpToScore(act.maxXp)} คะแนน)</span>
                       </div>
                     </div>
@@ -2965,7 +2644,7 @@ function TeacherScores({students,setStudents,assignments}){
                           <span style={{fontSize:20,flexShrink:0}}>{s.avatar}</span>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontSize:12,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name.split(" ").slice(1).join(" ")}</div>
-                            {entry?<div className="mono" style={{fontSize:13,color:"#f0a0c0",fontWeight:700}}>+{entry.xp} XP ({xpToScore(entry.xp)} คะแนน)</div>
+                            {entry?<div className="mono" style={{fontSize:13,color:"var(--gold)",fontWeight:700}}>+{entry.xp} XP ({xpToScore(entry.xp)} คะแนน)</div>
                                   :<div style={{fontSize:11,color:"var(--muted)"}}>ยังไม่ได้รับ</div>}
                           </div>
                           <span style={{fontSize:12,color:"var(--muted)",flexShrink:0}}>✏️</span>
@@ -3037,7 +2716,7 @@ function TeacherGrades({students,setStudents,assignments}){
   function gradeColor(g:string|null){
     if(!g)return"var(--muted)";
     const n=parseFloat(g);
-    if(n>=3.5)return"var(--cyan)";if(n>=2.5)return"#f0a0c0";if(n>=1.5)return"var(--orange)";return"var(--red)";
+    if(n>=3.5)return"var(--cyan)";if(n>=2.5)return"var(--gold)";if(n>=1.5)return"var(--orange)";return"var(--red)";
   }
   function getPPGroup(score:number){
     const p=score/maxPP;
@@ -3054,10 +2733,8 @@ function TeacherGrades({students,setStudents,assignments}){
     setSaved(true);setTimeout(()=>setSaved(false),3000);
   }
 
-  const [selRoomG,setSelRoomG]=useState("all");
-  const filteredG=selRoomG==="all"?students:students.filter((s:any)=>s.room===selRoomG);
-  const sorted=[...filteredG].sort((a:any,b:any)=>(getTotal(b)??-1)-(getTotal(a)??-1));
-  const withGrades=filteredG.filter((s:any)=>getTotal(s)!==null);
+  const sorted=[...students].sort((a:any,b:any)=>(getTotal(b)??-1)-(getTotal(a)??-1));
+  const withGrades=students.filter((s:any)=>getTotal(s)!==null);
   const passing=withGrades.filter((s:any)=>parseFloat(getGrade(getTotal(s))||"0")>0).length;
   const avg=withGrades.length>0?Math.round(withGrades.reduce((a:number,s:any)=>a+(getTotal(s)||0),0)/withGrades.length):null;
   const gradeCounts:any={"4.0":0,"3.5":0,"3.0":0,"2.5":0,"2.0":0,"1.5":0,"1.0":0,"0":0};
@@ -3151,7 +2828,7 @@ function TeacherGrades({students,setStudents,assignments}){
   const tabStyleG=(t:string)=>({
     background:tabG===t?"rgba(232,188,85,.12)":"transparent",
     border:"none",borderBottom:tabG===t?"2px solid var(--gold)":"2px solid transparent",
-    color:tabG===t?"#f0a0c0":"var(--muted2)",
+    color:tabG===t?"var(--gold2)":"var(--muted2)",
     padding:"10px 22px",cursor:"pointer",
     fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,letterSpacing:1,transition:"all .2s"
   } as React.CSSProperties);
@@ -3169,16 +2846,16 @@ function TeacherGrades({students,setStudents,assignments}){
   const ppTotal=ppStudents.length;
   const ppPct=(n:number)=>ppTotal?Math.round(n/ppTotal*1000)/10:0;
 
-  // ─── สร้างคอลัมน์รายการ (ใบงาน + กิจกรรม) แยกตามช่วงก่อน/หลังกลางภาค สำหรับรายงานทางการ (ใช้ filteredG ตามห้องที่เลือก) ───
+  // ─── สร้างคอลัมน์รายการ (ใบงาน + กิจกรรม) แยกตามช่วงก่อน/หลังกลางภาค สำหรับรายงานทางการ ───
   function buildPhaseItems(phase:string){
     const phaseAssign=(assignments||[]).filter((a:any)=>(a.phase||"before")===phase);
-    const actNames:string[]=[...new Set((filteredG||[]).flatMap((s:any)=>(s.xpLog||[]).filter((l:any)=>(l.phase||"before")===phase).map((l:any)=>l.activity)))];
+    const actNames:string[]=[...new Set((students||[]).flatMap((s:any)=>(s.xpLog||[]).filter((l:any)=>(l.phase||"before")===phase).map((l:any)=>l.activity)))];
     const assignItems=phaseAssign.map((a:any)=>({
       key:"a_"+a.id,name:a.title,max:xpToScore(a.xp,9999),
       score:(s:any)=>{const sub=s.submissions?.[a.id];return sub?.graded?xpToScore(sub.xpEarned,9999):0;}
     }));
     const actItems=actNames.map((name:any)=>{
-      const maxXpVal=Math.max(0,...(filteredG||[]).flatMap((s:any)=>(s.xpLog||[]).filter((l:any)=>l.activity===name).map((l:any)=>l.maxXp||l.xp||0)));
+      const maxXpVal=Math.max(0,...(students||[]).flatMap((s:any)=>(s.xpLog||[]).filter((l:any)=>l.activity===name).map((l:any)=>l.maxXp||l.xp||0)));
       return{
         key:"act_"+name,name,max:xpToScore(maxXpVal,9999),
         score:(s:any)=>{const log=(s.xpLog||[]).find((l:any)=>l.activity===name);return log?xpToScore(log.xp,9999):0;}
@@ -3195,11 +2872,14 @@ function TeacherGrades({students,setStudents,assignments}){
   const rFinal=(s:any)=>s.final??0;
   const rGrand=(s:any)=>rBefore(s)+rMid(s)+rAfter(s)+rFinal(s);
   const rGradeOf=(s:any)=>getGrade(rGrand(s));
-  const reportStudents=[...filteredG].sort((a:any,b:any)=>Number(a.password||0)-Number(b.password||0));
+  const reportStudents=[...students].sort((a:any,b:any)=>Number(a.password||0)-Number(b.password||0));
   const rptTh:React.CSSProperties={border:"1px solid #000",padding:"4px 6px",fontSize:16,fontWeight:700,textAlign:"center",background:"#f0f0f0",wordBreak:"normal",overflowWrap:"normal"};
   const rptTd:React.CSSProperties={border:"1px solid #000",padding:"4px 6px",fontSize:16,textAlign:"center",wordBreak:"normal",overflowWrap:"normal"};
   // ชื่อรายการใบงาน/กิจกรรมอาจยาว ลดขนาดเหลือ 14 ได้ถ้าตัวใหญ่ไม่พอ แต่ยังต้องตัดคำถูกหลักภาษาไทย (ไม่ตัดกลางคำมั่ว)
   const rptThItem:React.CSSProperties={border:"1px solid #000",padding:"4px 6px",fontSize:14,fontWeight:700,textAlign:"center",background:"#f0f0f0",wordBreak:"normal",overflowWrap:"normal"};
+  // โทนสีอ่อนสบายตาสำหรับแต่ละช่วงคะแนน (พื้นกระดาษขาว) — ใช้แนวสีเดียวกับตารางคะแนนในหน้าเว็บ แต่จางลงให้เหมาะกับพิมพ์
+  const rptC={before:"#f3e8ff",beforeTot:"#e9d5ff",mid:"#e0f2fe",midTot:"#bfdbfe",after:"#fce7f3",afterTot:"#fbcfe8",final:"#fef9c3",grand:"#fde68a",grade:"#dcfce7"};
+  function tint(base:React.CSSProperties,bg:string):React.CSSProperties{return{...base,background:bg};}
 
   return(
     <div className="fade-up" style={{padding:20,maxWidth:1000,margin:"0 auto"}}>
@@ -3209,16 +2889,6 @@ function TeacherGrades({students,setStudents,assignments}){
         <button style={tabStyleG("report")} onClick={()=>setTabG("report")}>📄 รายงานทางการ</button>
       </div>
 
-      {/* Room filter */}
-      <div style={{display:"flex",gap:8,marginBottom:16}}>
-        {[{id:"all",label:"🌸 ทุกห้อง"},{id:"r1",label:"🌸 ม.3/1"},{id:"r2",label:"🌿 ม.3/2"}].map(r=>(
-          <button key={r.id} onClick={()=>setSelRoomG(r.id)} className="btn"
-            style={{background:selRoomG===r.id?"rgba(240,160,192,.2)":"rgba(255,255,255,.04)",
-              border:`1px solid ${selRoomG===r.id?"rgba(240,160,192,.5)":"var(--border)"}`,
-              color:selRoomG===r.id?"#f0a0c0":"var(--muted2)",borderRadius:8,padding:"8px 16px",
-              fontSize:13,fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>{r.label}</button>
-        ))}
-      </div>
       {tabG==="score"&&(
         <div>
           <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:16}}>📊 สรุปคะแนนรวม</div>
@@ -3227,7 +2897,7 @@ function TeacherGrades({students,setStudents,assignments}){
             {[{icon:"👥",label:"นักเรียน",val:students.length,c:"var(--cyan)"},
               {icon:"✅",label:"ผ่านเกณฑ์",val:passing,c:"var(--green)"},
               {icon:"❌",label:"ไม่ผ่าน",val:withGrades.length-passing,c:"var(--red)"},
-              {icon:"📊",label:"คะแนนเฉลี่ย",val:avg!==null?avg+"":"รอกรอก",c:"#f0a0c0"},
+              {icon:"📊",label:"คะแนนเฉลี่ย",val:avg!==null?avg+"":"รอกรอก",c:"var(--gold)"},
             ].map((s,i)=>(
               <div key={i} className="card" style={{textAlign:"center"}}>
                 <div style={{fontSize:22,marginBottom:4}}>{s.icon}</div>
@@ -3238,7 +2908,7 @@ function TeacherGrades({students,setStudents,assignments}){
           </div>
           <div className="card" style={{marginBottom:20,overflowX:"auto"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
-              <div className="cond" style={{fontSize:18,color:"#f0a0c0"}}>ตารางคะแนนรายบุคคล</div>
+              <div className="cond" style={{fontSize:18,color:"var(--gold)"}}>ตารางคะแนนรายบุคคล</div>
               <button className="btn btn-gold" onClick={saveAll} style={{fontSize:14,padding:"10px 24px"}}>💾 บันทึกคะแนน</button>
             </div>
             <table style={{width:"100%",borderCollapse:"collapse",minWidth:640}}>
@@ -3276,7 +2946,7 @@ function TeacherGrades({students,setStudents,assignments}){
                           style={{width:56,background:"rgba(14,26,43,.8)",border:"1px solid rgba(232,140,74,.4)",color:"#e88c4a",borderRadius:5,padding:"5px 6px",fontFamily:"'Share Tech Mono',monospace",fontSize:14,textAlign:"center",outline:"none"}}/>
                       </td>
                       <td style={{textAlign:"center",padding:"10px 8px"}}>
-                        {total!==null?<span className="mono" style={{fontSize:16,fontWeight:700,color:"#f0a0c0"}}>{total}</span>:<span style={{fontSize:11,color:"var(--muted)"}}>รอกรอก</span>}
+                        {total!==null?<span className="mono" style={{fontSize:16,fontWeight:700,color:"var(--gold)"}}>{total}</span>:<span style={{fontSize:11,color:"var(--muted)"}}>รอกรอก</span>}
                       </td>
                       <td style={{textAlign:"center",padding:"10px 8px"}}>
                         <span className="cond" style={{fontSize:22,fontWeight:900,color:gradeColor(grade)}}>{grade??"—"}</span>
@@ -3289,11 +2959,11 @@ function TeacherGrades({students,setStudents,assignments}){
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
             <div className="card">
-              <div className="cond" style={{fontSize:16,color:"#f0a0c0",marginBottom:12}}>กราฟสรุปเกรด</div>
+              <div className="cond" style={{fontSize:16,color:"var(--gold)",marginBottom:12}}>กราฟสรุปเกรด</div>
               <div style={{position:"relative",height:220}}><canvas id="gradeDistChart"/></div>
             </div>
             <div className="card">
-              <div className="cond" style={{fontSize:16,color:"#f0a0c0",marginBottom:8}}>คะแนนรายส่วน (8 อันดับแรก)</div>
+              <div className="cond" style={{fontSize:16,color:"var(--gold)",marginBottom:8}}>คะแนนรายส่วน (8 อันดับแรก)</div>
               <div style={{display:"flex",gap:12,flexWrap:"wrap",fontSize:10,marginBottom:8}}>
                 {[["#185FA5","เก็บก่อนกลาง"],["#5DCAA5","กลางภาค"],["#f472b6","เก็บหลังกลาง"],["#e88c4a","ปลายภาค"]].map(([c,l])=>(
                   <span key={l}><span style={{display:"inline-block",width:8,height:8,borderRadius:2,background:c,marginRight:3}}></span>{l}</span>
@@ -3314,7 +2984,7 @@ function TeacherGrades({students,setStudents,assignments}){
                 <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,marginBottom:6}}>คะแนนเต็ม</div>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <input type="number" value={maxPP} min={1} max={100} onChange={e=>setMaxPP(Math.max(1,+e.target.value||20))}
-                    style={{width:64,background:"rgba(14,26,43,.8)",border:"1px solid rgba(212,168,67,.3)",color:"#f0a0c0",borderRadius:5,padding:"5px 8px",fontSize:14,textAlign:"center",outline:"none"}}/>
+                    style={{width:64,background:"rgba(14,26,43,.8)",border:"1px solid rgba(212,168,67,.3)",color:"var(--gold)",borderRadius:5,padding:"5px 8px",fontSize:14,textAlign:"center",outline:"none"}}/>
                   <span style={{fontSize:13,color:"var(--muted)"}}>คะแนน</span>
                 </div>
               </div>
@@ -3352,7 +3022,7 @@ function TeacherGrades({students,setStudents,assignments}){
                 </tr>
               </thead>
               <tbody>
-                {filteredG.map((st:any)=>{
+                {students.map((st:any)=>{
                   const pp=getPP(st);
                   const pg=pp.pre!==null?getPPGroup(pp.pre):null;
                   const qg=pp.post!==null?getPPGroup(pp.post):null;
@@ -3453,7 +3123,7 @@ function TeacherGrades({students,setStudents,assignments}){
       {tabG==="report"&&(
         <div>
           <div className="no-print" style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:10,padding:16,marginBottom:16}}>
-            <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,marginBottom:12}}>📄 กรอกข้อมูลหัวกระดาษก่อนพิมพ์ — ตอนนี้กำลังเลือกห้อง: {selRoomG==="all"?"ทุกห้อง":ROOMS.find((r:any)=>r.id===selRoomG)?.label}</div>
+            <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,marginBottom:12}}>📄 กรอกข้อมูลหัวกระดาษก่อนพิมพ์</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:10,marginBottom:12}}>
               {[["ชื่อโรงเรียน",rptSchool,setRptSchool],["รายวิชา / รหัสวิชา",rptSubject,setRptSubject],["ชั้น",rptClass,setRptClass],["ภาคเรียน / ปีการศึกษา",rptTerm,setRptTerm]].map(([l,v,s]:any)=>(
                 <div key={l}>
@@ -3463,13 +3133,44 @@ function TeacherGrades({students,setStudents,assignments}){
               ))}
             </div>
             <button className="btn btn-gold" onClick={()=>window.print()} style={{fontSize:14,padding:"10px 24px"}}>🖨️ พิมพ์ / บันทึกเป็น PDF</button>
-            <div style={{fontSize:11,color:"var(--muted)",marginTop:8}}>💡 ตารางกว้างมาก แนะนำตั้งค่าพิมพ์เป็นแนวนอน (Landscape) และ "พอดีหน้ากระดาษ" ในหน้าต่างพิมพ์ของเบราว์เซอร์ — ถ้าอยากพิมพ์ทีละห้อง ให้เปลี่ยน "เลือกห้อง" ด้านบนสุดของหน้านี้ก่อน</div>
+            <div style={{fontSize:11,color:"var(--muted)",marginTop:8}}>💡 ตารางกว้างมาก แนะนำตั้งค่าพิมพ์เป็นแนวนอน (Landscape) และ "พอดีหน้ากระดาษ" ในหน้าต่างพิมพ์ของเบราว์เซอร์</div>
+          </div>
+
+          <div className="no-print" style={{background:"var(--bg2)",border:"1px solid var(--border)",borderRadius:10,padding:16,marginBottom:16}}>
+            <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,marginBottom:12}}>⚙️ จัดลำดับ/เลือกคอลัมน์ที่จะแสดงในรายงาน (ปรับได้เอง)</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:16}}>
+              <div>
+                <div style={{fontSize:12,color:"#a78bfa",marginBottom:8,fontWeight:700}}>🟣 ก่อนกลางภาค</div>
+                {beforeOrder.map((o,i)=>{const it:any=beforeItems.find((x:any)=>x.key===o.key);if(!it)return null;return(
+                  <div key={o.key} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",marginBottom:4,
+                    background:o.visible?"rgba(167,139,250,.08)":"rgba(255,255,255,.03)",borderRadius:6,opacity:o.visible?1:.5}}>
+                    <input type="checkbox" checked={o.visible} onChange={()=>toggleVisible(setBeforeOrder,o.key)} style={{accentColor:"#a78bfa"}}/>
+                    <span style={{flex:1,fontSize:12,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.name}</span>
+                    <button onClick={()=>moveOrder(setBeforeOrder,i,-1)} disabled={i===0} style={{background:"transparent",border:"none",color:"var(--muted2)",cursor:i===0?"default":"pointer",opacity:i===0?.3:1,fontSize:14,padding:"0 4px"}}>▲</button>
+                    <button onClick={()=>moveOrder(setBeforeOrder,i,1)} disabled={i===beforeOrder.length-1} style={{background:"transparent",border:"none",color:"var(--muted2)",cursor:i===beforeOrder.length-1?"default":"pointer",opacity:i===beforeOrder.length-1?.3:1,fontSize:14,padding:"0 4px"}}>▼</button>
+                  </div>
+                );})}
+              </div>
+              <div>
+                <div style={{fontSize:12,color:"#f472b6",marginBottom:8,fontWeight:700}}>🔵 หลังกลางภาค</div>
+                {afterOrder.map((o,i)=>{const it:any=afterItems.find((x:any)=>x.key===o.key);if(!it)return null;return(
+                  <div key={o.key} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",marginBottom:4,
+                    background:o.visible?"rgba(244,114,182,.08)":"rgba(255,255,255,.03)",borderRadius:6,opacity:o.visible?1:.5}}>
+                    <input type="checkbox" checked={o.visible} onChange={()=>toggleVisible(setAfterOrder,o.key)} style={{accentColor:"#f472b6"}}/>
+                    <span style={{flex:1,fontSize:12,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.name}</span>
+                    <button onClick={()=>moveOrder(setAfterOrder,i,-1)} disabled={i===0} style={{background:"transparent",border:"none",color:"var(--muted2)",cursor:i===0?"default":"pointer",opacity:i===0?.3:1,fontSize:14,padding:"0 4px"}}>▲</button>
+                    <button onClick={()=>moveOrder(setAfterOrder,i,1)} disabled={i===afterOrder.length-1} style={{background:"transparent",border:"none",color:"var(--muted2)",cursor:i===afterOrder.length-1?"default":"pointer",opacity:i===afterOrder.length-1?.3:1,fontSize:14,padding:"0 4px"}}>▼</button>
+                  </div>
+                );})}
+              </div>
+            </div>
+            <div style={{fontSize:11,color:"var(--muted)",marginTop:10}}>💡 ติ๊กออกเพื่อซ่อนคอลัมน์นั้นจากรายงาน (ยอดรวม/เกรดยังคำนวณจากทุกรายการเหมือนเดิม ไม่กระทบคะแนนจริง) กด ▲▼ เพื่อสลับลำดับ</div>
           </div>
 
           <div id="print-report-area" lang="th" style={{background:"#fff",color:"#000",padding:24,borderRadius:8,overflowX:"auto",fontFamily:"'TH Sarabun PSK',sans-serif",wordBreak:"normal",overflowWrap:"normal",lineBreak:"strict"}}>
             <div style={{textAlign:"center",marginBottom:4,fontSize:18,fontWeight:700}}>{rptSchool}</div>
             <div style={{display:"flex",justifyContent:"space-between",fontSize:16,marginBottom:2}}>
-              <span>คะแนนนักเรียน{rptClass} {selRoomG==="all"?"":`(${ROOMS.find((r:any)=>r.id===selRoomG)?.label})`}</span><span>{rptTerm}</span>
+              <span>คะแนนนักเรียน{rptClass}</span><span>{rptTerm}</span>
             </div>
             <div style={{textAlign:"left",fontSize:16,marginBottom:14}}>{rptSubject}</div>
             <table style={{borderCollapse:"collapse",width:"100%",fontSize:16}}>
@@ -3478,19 +3179,19 @@ function TeacherGrades({students,setStudents,assignments}){
                   <th rowSpan={2} style={rptTh}>ลำดับ</th>
                   <th rowSpan={2} style={rptTh}>เลขประจำตัว</th>
                   <th rowSpan={2} style={{...rptTh,textAlign:"left",whiteSpace:"nowrap"}}>ชื่อ-สกุล</th>
-                  <th colSpan={beforeItems.length+2} style={rptTh}>ก่อนกลางภาค (35)</th>
-                  <th rowSpan={2} style={rptTh}>สอบกลางภาค (15)</th>
-                  <th rowSpan={2} style={rptTh}>รวมกลางภาค (50)</th>
-                  <th colSpan={afterItems.length+1} style={rptTh}>หลังกลางภาค (35)</th>
-                  <th rowSpan={2} style={rptTh}>สอบปลายภาค (15)</th>
-                  <th rowSpan={2} style={rptTh}>รวม (100)</th>
-                  <th rowSpan={2} style={rptTh}>เกรด</th>
+                  <th colSpan={beforeShown.length+2} style={tint(rptTh,rptC.before)}>ก่อนกลางภาค (35)</th>
+                  <th rowSpan={2} style={tint(rptTh,rptC.mid)}>สอบกลางภาค (15)</th>
+                  <th rowSpan={2} style={tint(rptTh,rptC.midTot)}>รวมกลางภาค (50)</th>
+                  <th colSpan={afterShown.length+1} style={tint(rptTh,rptC.after)}>หลังกลางภาค (35)</th>
+                  <th rowSpan={2} style={tint(rptTh,rptC.final)}>สอบปลายภาค (15)</th>
+                  <th rowSpan={2} style={tint(rptTh,rptC.grand)}>รวม (100)</th>
+                  <th rowSpan={2} style={tint(rptTh,rptC.grade)}>เกรด</th>
                 </tr>
                 <tr>
-                  {beforeItems.map((it:any)=><th key={it.key} style={rptThItem}>{it.name}<br/>({it.max})</th>)}
-                  <th style={rptTh}>รวม</th>
-                  {afterItems.map((it:any)=><th key={it.key} style={rptThItem}>{it.name}<br/>({it.max})</th>)}
-                  <th style={rptTh}>รวม</th>
+                  {beforeShown.map((it:any)=><th key={it.key} style={tint(rptThItem,rptC.before)}>{it.name}<br/>({it.max})</th>)}
+                  <th style={tint(rptTh,rptC.beforeTot)}>รวม</th>
+                  {afterShown.map((it:any)=><th key={it.key} style={tint(rptThItem,rptC.after)}>{it.name}<br/>({it.max})</th>)}
+                  <th style={tint(rptTh,rptC.afterTot)}>รวม</th>
                 </tr>
               </thead>
               <tbody>
@@ -3499,15 +3200,15 @@ function TeacherGrades({students,setStudents,assignments}){
                     <td style={rptTd}>{i+1}</td>
                     <td style={rptTd}>{s.password}</td>
                     <td style={{...rptTd,textAlign:"left",whiteSpace:"nowrap"}}>{s.name}</td>
-                    {beforeItems.map((it:any)=><td key={it.key} style={rptTd}>{it.score(s)}</td>)}
-                    <td style={{...rptTd,fontWeight:700}}>{rBefore(s)}</td>
-                    <td style={rptTd}>{s.midterm??"—"}</td>
-                    <td style={{...rptTd,fontWeight:700}}>{rBefore(s)+rMid(s)}</td>
-                    {afterItems.map((it:any)=><td key={it.key} style={rptTd}>{it.score(s)}</td>)}
-                    <td style={{...rptTd,fontWeight:700}}>{rAfter(s)}</td>
-                    <td style={rptTd}>{s.final??"—"}</td>
-                    <td style={{...rptTd,fontWeight:700}}>{rGrand(s)}</td>
-                    <td style={{...rptTd,fontWeight:700}}>{rGradeOf(s)??"—"}</td>
+                    {beforeShown.map((it:any)=><td key={it.key} style={tint(rptTd,rptC.before)}>{it.score(s)}</td>)}
+                    <td style={tint({...rptTd,fontWeight:700},rptC.beforeTot)}>{rBefore(s)}</td>
+                    <td style={tint(rptTd,rptC.mid)}>{s.midterm??"—"}</td>
+                    <td style={tint({...rptTd,fontWeight:700},rptC.midTot)}>{rBefore(s)+rMid(s)}</td>
+                    {afterShown.map((it:any)=><td key={it.key} style={tint(rptTd,rptC.after)}>{it.score(s)}</td>)}
+                    <td style={tint({...rptTd,fontWeight:700},rptC.afterTot)}>{rAfter(s)}</td>
+                    <td style={tint(rptTd,rptC.final)}>{s.final??"—"}</td>
+                    <td style={tint({...rptTd,fontWeight:700},rptC.grand)}>{rGrand(s)}</td>
+                    <td style={tint({...rptTd,fontWeight:700},rptC.grade)}>{rGradeOf(s)??"—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -3607,7 +3308,7 @@ function TeacherAirdrop({students,setPendingAirdrop,setStudents,studentsLoadOk})
   const tabStyle2=(t:string)=>({
     background:tabAir===t?"rgba(232,188,85,.12)":"transparent",
     border:"none",borderBottom:tabAir===t?"2px solid var(--gold)":"2px solid transparent",
-    color:tabAir===t?"#f0a0c0":"var(--muted2)",
+    color:tabAir===t?"var(--gold2)":"var(--muted2)",
     padding:"10px 22px",cursor:"pointer",
     fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:14,letterSpacing:1,
     transition:"all .2s"
@@ -3650,10 +3351,10 @@ function TeacherAirdrop({students,setPendingAirdrop,setStudents,studentsLoadOk})
         </div>
       )}
       {tabAir==="roll" && (<div>
-      {sent&&<div className="air-in" style={{background:"rgba(232,188,85,.12)",border:"1px solid rgba(232,188,85,.5)",borderRadius:8,padding:"13px 20px",marginBottom:14,color:"#f0a0c0",fontSize:14,textAlign:"center"}}>{sent}</div>}
+      {sent&&<div className="air-in" style={{background:"rgba(232,188,85,.12)",border:"1px solid rgba(232,188,85,.5)",borderRadius:8,padding:"13px 20px",marginBottom:14,color:"var(--gold2)",fontSize:14,textAlign:"center"}}>{sent}</div>}
       <div className="card card-gold" style={{marginBottom:14}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:showPoolEditor?16:0}}>
-          <div><div className="cond" style={{fontSize:18,color:"#f0a0c0",letterSpacing:2}}>🎁 Reward Pool ({pool.length})</div></div>
+          <div><div className="cond" style={{fontSize:18,color:"var(--gold)",letterSpacing:2}}>🎁 Reward Pool ({pool.length})</div></div>
           <button className="btn btn-gold" onClick={()=>setShowPoolEditor(p=>!p)} style={{fontSize:13,padding:"9px 20px"}}>
             {showPoolEditor?"▲ ซ่อน":"▼ จัดการ"}
           </button>
@@ -3722,7 +3423,7 @@ function TeacherAirdrop({students,setPendingAirdrop,setStudents,studentsLoadOk})
         </div>
         <div className="card card-gold" style={{textAlign:"center",minHeight:220,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
           {!rolling&&!result&&<div><div style={{fontSize:56,opacity:.25,marginBottom:8}}>📦</div><div className="mono" style={{fontSize:11,color:"var(--muted)"}}>กด ROLL เพื่อสุ่ม</div></div>}
-          {rolling&&pool[rollIdx]&&<div><div style={{fontSize:72,animation:"spin .18s linear infinite"}}>{pool[rollIdx].icon}</div><div className="mono" style={{fontSize:12,color:"#f0a0c0",marginTop:10,animation:"blink .4s linear infinite"}}>ROLLING...</div></div>}
+          {rolling&&pool[rollIdx]&&<div><div style={{fontSize:72,animation:"spin .18s linear infinite"}}>{pool[rollIdx].icon}</div><div className="mono" style={{fontSize:12,color:"var(--gold)",marginTop:10,animation:"blink .4s linear infinite"}}>ROLLING...</div></div>}
           {result&&!rolling&&(
             <div className="air-in">
               <div style={{fontSize:72,marginBottom:10,filter:`drop-shadow(0 0 22px ${result.color})`}}>{result.icon}</div>
@@ -3741,11 +3442,7 @@ function TeacherAirdrop({students,setPendingAirdrop,setStudents,studentsLoadOk})
 // ─────────────────────────────────────────────
 // GOOGLE APPS SCRIPT API — แก้ไขแล้ว
 // ─────────────────────────────────────────────
-const GAS_URL = "https://script.google.com/macros/s/AKfycbwoaVGfEoN7CTS4hcIhdZ09JW7DH3e87gT9De-xkhOZOv-4lLKebsxVgm7iasVElKCr/exec";
-const img1 = "https://drive.google.com/uc?export=view&id=17fdYhXvfxqVa9_737WvrRsunONhd3Vrd";
-const img2 = "https://i.postimg.cc/RVGwSXJh/a8d4de59513d2b1ca0a346c0c7fd039c.jpg";
-const img3 = "https://i.postimg.cc/13kXsqB0/wp13416836.png";
-
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwvO4vrGJ5GQJwoT6Fm0xKRlySQAcFRCIhsn53oP9Mfr5zXuzmaI3ShDeyFMyeqJz2JOQ/exec";
 
 async function gasGet(){
   try{
@@ -3985,14 +3682,13 @@ export default function App(){
   const{role,userId}=auth||{};
   const currentStudent=students.find(s=>s.id===userId);
   const navUser=role==="teacher"?{name:"ครูผู้สอน",avatar:"👩‍✈️",xp:9999}:currentStudent;
-  const currentRoom=currentStudent?.room;
 
   if(!auth)return(<><style>{G}</style><LoginScreen students={students} onLogin={handleLogin}/></>);
 
   return(
     <>
       <style>{G}</style>
-      <SakuraBackground/>
+      <PhysicsBackground/>
       {activePopup&&role==="student"&&<AirdropPopup airdrop={activePopup} onClaim={()=>{
         setStudents(prev=>prev.map(s=>s.id===userId?{...s,inventory:s.inventory.map((it:any)=>it.name===activePopup.name?{...it,seen:true}:it)}:s));
         setActivePopup(null);
@@ -4004,7 +3700,7 @@ export default function App(){
             display:"flex",alignItems:"center",gap:14,backdropFilter:"blur(8px)"}}>
             <div style={{fontSize:28,animation:"shake 1s ease-in-out infinite"}}>📦</div>
             <div style={{flex:1}}>
-              <div style={{fontSize:14,fontWeight:600,color:"#f0a0c0"}}>มี Airdrop รอคุณอยู่!</div>
+              <div style={{fontSize:14,fontWeight:600,color:"var(--gold)"}}>มี Airdrop รอคุณอยู่!</div>
               <div style={{fontSize:12,color:"var(--muted2)",marginTop:2}}>ครูส่งรางวัลให้คุณ กดเปิดได้เลย</div>
             </div>
             <button className="btn btn-gold" onClick={()=>{setActivePopup(loginPending);setLoginPending(null);}}
@@ -4015,7 +3711,7 @@ export default function App(){
         </div>
       )}
       <div style={{position:"relative",zIndex:1,minHeight:"100vh"}}>
-        <TopNav user={navUser} role={role} page={page} setPage={setPage} onLogout={handleLogout} room={currentRoom} assignments={assignments}/>
+        <TopNav user={navUser} role={role} page={page} setPage={setPage} onLogout={handleLogout} assignments={assignments}/>
         <main>
           <PageHeader page={page} setPage={setPage}/>
           {loaded&&!dataLoadOk&&(
