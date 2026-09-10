@@ -2765,6 +2765,43 @@ function TeacherGrades({students,setStudents,assignments}){
   }
   const beforeItems=buildPhaseItems("before");
   const afterItems=buildPhaseItems("after");
+  // ─── จัดลำดับ/ซ่อน-แสดงคอลัมน์รายงานได้เอง — ดีฟอลต์ตามลำดับที่ตรวจพบ แต่ครูปรับเองได้ก่อนพิมพ์แต่ละครั้ง ───
+  const[beforeOrder,setBeforeOrder]=useState<{key:string,visible:boolean}[]>([]);
+  const[afterOrder,setAfterOrder]=useState<{key:string,visible:boolean}[]>([]);
+  const beforeKeysSig=beforeItems.map((it:any)=>it.key).join("|");
+  const afterKeysSig=afterItems.map((it:any)=>it.key).join("|");
+  useEffect(()=>{
+    setBeforeOrder(prev=>{
+      const stillExist=prev.filter(o=>beforeItems.some((it:any)=>it.key===o.key));
+      const existingKeys=new Set(stillExist.map(o=>o.key));
+      const newOnes=beforeItems.filter((it:any)=>!existingKeys.has(it.key)).map((it:any)=>({key:it.key,visible:true}));
+      return[...stillExist,...newOnes];
+    });
+  },[beforeKeysSig]);
+  useEffect(()=>{
+    setAfterOrder(prev=>{
+      const stillExist=prev.filter(o=>afterItems.some((it:any)=>it.key===o.key));
+      const existingKeys=new Set(stillExist.map(o=>o.key));
+      const newOnes=afterItems.filter((it:any)=>!existingKeys.has(it.key)).map((it:any)=>({key:it.key,visible:true}));
+      return[...stillExist,...newOnes];
+    });
+  },[afterKeysSig]);
+  function moveOrder(setFn:any,idx:number,dir:number){
+    setFn((prev:any[])=>{
+      const next=[...prev];
+      const j=idx+dir;
+      if(j<0||j>=next.length)return prev;
+      [next[idx],next[j]]=[next[j],next[idx]];
+      return next;
+    });
+  }
+  function toggleVisible(setFn:any,key:string){
+    setFn((prev:any[])=>prev.map(o=>o.key===key?{...o,visible:!o.visible}:o));
+  }
+  const beforeShown=(beforeOrder.length?beforeOrder:beforeItems.map((it:any)=>({key:it.key,visible:true})))
+    .filter(o=>o.visible).map(o=>beforeItems.find((it:any)=>it.key===o.key)).filter(Boolean);
+  const afterShown=(afterOrder.length?afterOrder:afterItems.map((it:any)=>({key:it.key,visible:true})))
+    .filter(o=>o.visible).map(o=>afterItems.find((it:any)=>it.key===o.key)).filter(Boolean);
   function subtotal(s:any,items:any[],cap:number){return Math.min(cap,items.reduce((sum,it)=>sum+it.score(s),0));}
   const rBefore=(s:any)=>subtotal(s,beforeItems,35);
   const rAfter=(s:any)=>subtotal(s,afterItems,35);
