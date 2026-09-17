@@ -89,6 +89,22 @@ const XP_RANKS = [
   {minXP:1250,maxXP:1374,label:"BRONZE II",grade:"1",  color:"#ff9840",icon:"🥉",desc:"อ่อนมาก",   scoreRange:"50–54"},
   {minXP:0,   maxXP:1249,label:"IRON",     grade:"0",  color:"#9aacbf",icon:"⚙️",desc:"ไม่ผ่าน",   scoreRange:"0–49"},
 ];
+// ── เกรดสรุปที่ครูตั้งเองได้ (ร/มส/0-4) — ครอบค่าที่คำนวณอัตโนมัติได้ทุกจุดที่โชว์เกรดในเว็บ ──
+// เก็บที่ student.gradeOverride: null = ใช้ค่าคำนวณอัตโนมัติตามปกติ, ไม่งั้นใช้ค่าที่ครูตั้งแทนเสมอ
+const GRADE_ORDER=["ร","มส","0","1","1.5","2","2.5","3","3.5","4"];
+const GRADE_ORDER_COLORS=["#eab308","#dc2626","#f87171","#fb923c","#fbbf24","#34d399","#60a5fa","#f472b6","#818cf8","#a78bfa"];
+function overrideMeta(g:string){
+  if(g==="ร")return{color:"#eab308",icon:"⏳"};
+  if(g==="มส")return{color:"#dc2626",icon:"🚫"};
+  const found=XP_RANKS.find(r=>r.grade===g);
+  return found?{color:found.color,icon:found.icon}:{color:"var(--muted)",icon:"—"};
+}
+// เกรด Rank/XP ที่ "ใช้จริง" ทั้งเว็บ — ถ้าครูตั้งเกรดเอง ใช้ค่านั้นเสมอ ไม่งั้นคำนวณจาก XP ตามปกติ
+function finalGradeRank(student:any,assignments:any){
+  if(student?.gradeOverride)return student.gradeOverride;
+  return getRank(getEffectiveXP(student,assignments)).grade;
+}
+function isFailGrade(g:string|null){return g==="0"||g==="ร"||g==="มส";}
 let MAX_XP = 2500;
 
 const AIRDROP_POOL = [
@@ -272,16 +288,19 @@ function XPBar({xp,maxXP=MAX_XP,showLabel=true}){
   );
 }
 
-function GradeTag({xp,big=false}){
+function GradeTag({xp,big=false,override}:{xp:number,big?:boolean,override?:string|null}){
   const r=getRank(xp);
+  const hasOverride=!!override;
+  const displayGrade=hasOverride?override:r.grade;
+  const meta=hasOverride?overrideMeta(override as string):{color:r.color,icon:r.icon};
   return(
     <div style={{display:"inline-flex",flexDirection:"column",alignItems:"center",
-      background:`${r.color}20`,border:`2px solid ${r.color}70`,
+      background:`${meta.color}20`,border:`2px solid ${meta.color}70`,
       borderRadius:8,padding:big?"10px 18px":"6px 12px",textAlign:"center"}}>
-      <div style={{fontSize:big?18:14}}>{r.icon}</div>
-      <div className="cond" style={{fontSize:big?38:22,fontWeight:900,color:r.color,lineHeight:1,
-        textShadow:`0 0 18px ${r.color}66`}}>{r.grade}</div>
-      <div className="mono" style={{fontSize:big?10:8,color:r.color,letterSpacing:1,marginTop:1}}>GRADE</div>
+      <div style={{fontSize:big?18:14}}>{meta.icon}</div>
+      <div className="cond" style={{fontSize:big?38:22,fontWeight:900,color:meta.color,lineHeight:1,
+        textShadow:`0 0 18px ${meta.color}66`}}>{displayGrade}</div>
+      <div className="mono" style={{fontSize:big?10:8,color:meta.color,letterSpacing:1,marginTop:1}}>GRADE</div>
     </div>
   );
 }
@@ -806,7 +825,7 @@ function StudentDashboard({student,students,assignments,setPage,setStudents}){
               <span className="badge" style={{background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.4)",color:"var(--green)"}}>✓ {submitted}/{assignments.length} งาน</span>
             </div>
           </div>
-          <GradeTag xp={effXP} big={true}/>
+          <GradeTag xp={effXP} big={true} override={student.gradeOverride}/>
         </div>
         <div style={{marginTop:20}}>
           <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,marginBottom:8}}>PROGRESS TO VICTORY</div>
@@ -1140,7 +1159,7 @@ function RankingPage({students,myId,isTeacher=false,assignments}){
             <div style={{textAlign:"center",flexShrink:0}}>
               <div className="cond" style={{fontSize:28,fontWeight:900,color:mc[i],whiteSpace:"nowrap"}}>{sxp.toLocaleString()}</div>
               <div style={{fontSize:10,color:"var(--muted)",whiteSpace:"nowrap"}}>XP ({xpToScore(sxp)} คะแนน)</div>
-              <GradeTag xp={sxp}/>
+              <GradeTag xp={sxp} override={s.gradeOverride}/>
             </div>
           </div>
         );})}
@@ -1163,7 +1182,7 @@ function RankingPage({students,myId,isTeacher=false,assignments}){
               <div style={{textAlign:"center",flexShrink:0}}>
                 <div className="cond" style={{fontSize:26,fontWeight:900,color:"var(--gold)",whiteSpace:"nowrap"}}>{eff(mySelf).toLocaleString()}</div>
                 <div style={{fontSize:10,color:"var(--muted)",whiteSpace:"nowrap"}}>XP ({xpToScore(eff(mySelf))} คะแนน)</div>
-                <GradeTag xp={eff(mySelf)}/>
+                <GradeTag xp={eff(mySelf)} override={mySelf.gradeOverride}/>
               </div>
             </div>
             <div style={{textAlign:"center",marginTop:12,fontSize:13,color:"var(--muted)"}}>
@@ -1191,7 +1210,7 @@ function RankingPage({students,myId,isTeacher=false,assignments}){
           <div style={{textAlign:"center",flexShrink:0}}>
             <div className="cond" style={{fontSize:26,fontWeight:900,color:r.color,whiteSpace:"nowrap"}}>{sxp.toLocaleString()}</div>
             <div style={{fontSize:10,color:"var(--muted)",whiteSpace:"nowrap"}}>XP ({xpToScore(sxp)} คะแนน)</div>
-            <GradeTag xp={sxp}/>
+            <GradeTag xp={sxp} override={s.gradeOverride}/>
           </div>
         </div>
       );})}
@@ -1322,12 +1341,12 @@ function GradeChart({students,assignments}){
   useChartJS();
   const chartRef=useRef<any>(null),pieRef=useRef(null);
   const barInst=useRef<any>(null),pieInst=useRef(null);
-  const gradeMap={"4":0,"3.5":0,"3":0,"2.5":0,"2":0,"1.5":0,"1":0,"0":0};
-  students.forEach(s=>{const r=getRank(getEffectiveXP(s,assignments));if(r.grade in gradeMap)gradeMap[r.grade]++;});
-  const labels=Object.keys(gradeMap),data=Object.values(gradeMap);
-  const colors=["#a78bfa","#818cf8","#60a5fa","#f472b6","#34d399","#fbbf24","#fb923c","#f87171"];
+  const gradeMap:any={};GRADE_ORDER.forEach(g=>gradeMap[g]=0);
+  students.forEach(s=>{const g=finalGradeRank(s,assignments);if(g in gradeMap)gradeMap[g]++;});
+  const labels=GRADE_ORDER,data=GRADE_ORDER.map(g=>gradeMap[g]);
+  const colors=GRADE_ORDER_COLORS;
   const total=students.length;
-  const passing=students.filter(s=>getRank(getEffectiveXP(s,assignments)).grade!=="0").length;
+  const passing=students.filter(s=>!isFailGrade(finalGradeRank(s,assignments))).length;
   useEffect(()=>{
     if(typeof Chart==="undefined"||!chartRef.current)return;
     if(barInst.current)barInst.current.destroy();
@@ -1340,7 +1359,7 @@ function GradeChart({students,assignments}){
     });
     const nz=labels.map((l,i)=>({l,d:data[i],c:colors[i]})).filter(x=>x.d>0);
     pieInst.current=new Chart(pieRef.current,{
-      type:"doughnut",data:{labels:nz.map(x=>"เกรด "+x.l),datasets:[{data:nz.map(x=>x.d),backgroundColor:nz.map(x=>x.c),borderWidth:3,borderColor:"rgba(10,20,38,.9)"}]},
+      type:"doughnut",data:{labels:nz.map(x=>(x.l==="ร"||x.l==="มส")?x.l:"เกรด "+x.l),datasets:[{data:nz.map(x=>x.d),backgroundColor:nz.map(x=>x.c),borderWidth:3,borderColor:"rgba(10,20,38,.9)"}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
     });
   },[students]);
@@ -1368,7 +1387,7 @@ function GradeChart({students,assignments}){
 // ─────────────────────────────────────────────
 function TeacherOverview({students,assignments,setPage,maxXp,onEditMaxXp}:any){
   const avgXP=Math.round(students.reduce((a,s)=>a+getEffectiveXP(s,assignments),0)/students.length);
-  const passing=students.filter(s=>parseFloat(getRank(getEffectiveXP(s,assignments)).grade)>0).length;
+  const passing=students.filter(s=>!isFailGrade(finalGradeRank(s,assignments))).length;
   // ดาวน์โหลดข้อมูลนักเรียนปัจจุบันเก็บไว้ในเครื่อง — สำรองอิสระ ไม่พึ่งอะไรฝั่งเซิร์ฟเวอร์เลย
   // ครูควรกดเก็บไว้เป็นระยะๆ โดยเฉพาะหลังให้คะแนนชุดใหญ่ๆ เผื่อไว้กู้คืนเองได้ทันทีถ้าเกิดปัญหา
   function downloadBackup(){
@@ -1444,6 +1463,11 @@ function TeacherStudents({students,assignments,setStudents,studentsLoadOk}){
   const [editSubModal,setEditSubModal]=useState<any>(null); // {assignmentId, xpEarned, maxXp}
   const [editLogModal,setEditLogModal]=useState<any>(null); // {idx, xp, activity}
   const s=sel?students.find(x=>x.id===sel):null;
+  // ตั้ง/ล้างเกรดสรุปเอง (ร/มส/0-4) — ใช้แทนค่าคำนวณอัตโนมัติทุกจุดในเว็บทันที
+  function setGradeOverride(studentId:string,value:string|null){
+    if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (เพื่อป้องกันข้อมูลเสียหาย)");return;}
+    setStudents((prev:any)=>prev.map((st:any)=>st.id===studentId?{...st,gradeOverride:value||null}:st));
+  }
   function removeAirdrop(studentId,idx){
     if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (เพื่อป้องกันข้อมูลเสียหาย)");return;}
     setStudents(prev=>{
@@ -1571,10 +1595,21 @@ function TeacherStudents({students,assignments,setStudents,studentsLoadOk}){
         <div style={{display:"flex",gap:16,alignItems:"center",flexWrap:"wrap"}}>
           <div style={{fontSize:52}}>{s.avatar}</div>
           <div style={{flex:1}}><div className="cond" style={{fontSize:28,fontWeight:700,color:"#fff"}}>{s.name}</div></div>
-          <GradeTag xp={getEffectiveXP(s,assignments)} big={true}/>
+          <GradeTag xp={getEffectiveXP(s,assignments)} big={true} override={s.gradeOverride}/>
         </div>
         <div style={{marginTop:16}}><XPBar xp={getEffectiveXP(s,assignments)}/></div>
         <div style={{marginTop:10}}><ProgressFlag xp={getEffectiveXP(s,assignments)}/></div>
+        <div style={{marginTop:14,padding:"10px 14px",background:"rgba(167,139,250,.06)",border:"1px solid rgba(167,139,250,.25)",borderRadius:8,display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+          <div style={{flex:1,minWidth:180}}>
+            <div className="mono" style={{fontSize:9,color:"var(--muted)",letterSpacing:1}}>เกรดสรุป (ครูแก้ไขเองได้ — ใช้แทนค่าที่คำนวณอัตโนมัติทุกจุดในเว็บทันที)</div>
+            <div className="mono" style={{fontSize:13,color:s.gradeOverride?"#a78bfa":"var(--muted)",marginTop:2}}>{s.gradeOverride?`ตั้งเป็น "${s.gradeOverride}" เอง`:"อัตโนมัติตาม XP/คะแนน"}</div>
+          </div>
+          <select value={s.gradeOverride||""} onChange={e=>setGradeOverride(s.id,e.target.value||null)}
+            style={{background:"rgba(10,20,38,.8)",border:"1px solid rgba(167,139,250,.4)",color:"#a78bfa",borderRadius:6,padding:"7px 10px",fontSize:13,fontFamily:"'Share Tech Mono',monospace"}}>
+            <option value="">อัตโนมัติ</option>
+            {GRADE_ORDER.map(g=><option key={g} value={g}>{g}</option>)}
+          </select>
+        </div>
       </div>
       <div className="card" style={{marginBottom:16}}>
         <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:2,marginBottom:14}}>SUBMISSION STATUS</div>
@@ -1709,7 +1744,7 @@ function TeacherStudents({students,assignments,setStudents,studentsLoadOk}){
             <div style={{maxWidth:280}}><XPBar xp={sxp} showLabel={false}/></div>
           </div>
           <div className="mono" style={{fontSize:20,color:r.color}}>{sxp.toLocaleString()}</div>
-          <GradeTag xp={sxp}/>
+          <GradeTag xp={sxp} override={s.gradeOverride}/>
           <div style={{color:"var(--muted)",cursor:"pointer"}} onClick={()=>setSel(s.id)}>›</div>
         </div>
       );})}
@@ -2119,7 +2154,7 @@ function TeacherResources({resources,setResources}){
 // ─────────────────────────────────────────────
 // TEACHER: XP MANAGEMENT (อัปเกรด)
 // ─────────────────────────────────────────────
-function TeacherScores({students,setStudents,assignments}){
+function TeacherScores({students,setStudents,assignments,studentsLoadOk}){
   const [tab,setTab]=useState("add");
   useEffect(()=>{window.scrollTo(0,0);},[tab]);
   const [maxXpAmt,setMaxXpAmt]=useState(""); // XP เต็มของกิจกรรมนี้ — ตั้งครั้งเดียว ค้างไว้ได้จนกว่าจะกด "เสร็จสิ้น" (รองรับงานกลุ่มที่ให้คะแนนหลายรอบ)
@@ -2169,6 +2204,37 @@ function TeacherScores({students,setStudents,assignments}){
     }));
     toast(`🗑 ลบ XP ของ ${studentName} ในกิจกรรมนี้แล้ว (กลับเป็นยังไม่ได้คะแนน)`);
     setEditEntry(null);
+  }
+  // แก้ไข/ลบ XP ต่อคนตรงในหน้าสรุปรายงานได้เลย (ไม่ต้องเปิด popup)
+  function updateEntryXpInline(activityName:string,studentId:string,newXpStr:string,actMaxXp:number,chapterId:string,phase:string){
+    if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (เพื่อป้องกันข้อมูลเสียหาย)");return;}
+    const newXp=Number(newXpStr);
+    if(newXpStr===""||isNaN(newXp)||newXp<0)return;
+    const today=new Date().toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
+    setStudents((prev:any)=>prev.map((s:any)=>{
+      if(s.id!==studentId)return s;
+      const idx=(s.xpLog||[]).findIndex((l:any)=>l.activity===activityName);
+      if(idx===-1){
+        const logEntry={activity:activityName,xp:newXp,maxXp:actMaxXp,date:today,chapterId,phase};
+        return{...s,xp:s.xp+newXp,xpLog:[...(s.xpLog||[]),logEntry]};
+      }
+      const oldXp=s.xpLog[idx].xp||0;
+      const diff=newXp-oldXp;
+      const newLog=[...s.xpLog];
+      newLog[idx]={...newLog[idx],xp:newXp};
+      return{...s,xp:s.xp+diff,xpLog:newLog};
+    }));
+  }
+  function quickDeleteEntry(activityName:string,studentId:string){
+    if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (เพื่อป้องกันข้อมูลเสียหาย)");return;}
+    setStudents((prev:any)=>prev.map((s:any)=>{
+      if(s.id!==studentId)return s;
+      const idx=(s.xpLog||[]).findIndex((l:any)=>l.activity===activityName);
+      if(idx===-1)return s;
+      const oldXp=s.xpLog[idx].xp||0;
+      const newLog=s.xpLog.filter((_:any,i:number)=>i!==idx);
+      return{...s,xp:s.xp-oldXp,xpLog:newLog};
+    }));
   }
 
   function toast(t,isErr=false){setMsg({text:t,err:isErr});setTimeout(()=>setMsg(null),3500);}
@@ -2417,7 +2483,7 @@ function TeacherScores({students,setStudents,assignments}){
                 <span style={{flex:1,fontSize:14}}>{s.name}</span>
                 <div style={{width:110}}><XPBar xp={sxp} showLabel={false}/></div>
                 <div className="mono" style={{width:70,textAlign:"right",color:r.color}}>{sxp.toLocaleString()}</div>
-                <GradeTag xp={sxp}/>
+                <GradeTag xp={sxp} override={s.gradeOverride}/>
               </div>
             );})}
           </div>
@@ -2513,7 +2579,7 @@ function TeacherScores({students,setStudents,assignments}){
             </div>
           ):(
             allActivities.map((act:any,ai)=>{
-              const sortedStudents=[...students].sort((a,b)=>b.xp-a.xp);
+              const sortedStudents=[...students].sort((a:any,b:any)=>Number(a.password||0)-Number(b.password||0));
               const totalGiven=Object.values(act.entries).reduce((s:number,e:any)=>s+(e.xp||0),0);
               const receivedCount=Object.keys(act.entries).length;
               return(
@@ -2536,24 +2602,27 @@ function TeacherScores({students,setStudents,assignments}){
                         style={{fontSize:12,padding:"6px 14px",borderColor:"rgba(232,96,96,.4)",color:"var(--red)"}}>🗑 ลบ</button>
                     </div>
                   </div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
-                    {sortedStudents.map(s=>{
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:8}}>
+                    {sortedStudents.map((s,i)=>{
                       const entry=act.entries[s.id];
                       return(
-                        <div key={s.id} onClick={()=>setEditEntry({activityName:act.name,studentId:s.id,studentName:s.name,xp:entry?entry.xp:act.maxXp,maxXp:act.maxXp,isNew:!entry})}
-                          style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",cursor:"pointer",
+                        <div key={s.id+"_"+(entry?entry.xp:"none")} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",
                           background:entry?"rgba(94,200,126,.07)":"rgba(232,96,96,.05)",
                           border:`1px solid ${entry?"rgba(94,200,126,.25)":"rgba(232,96,96,.15)"}`,
-                          borderRadius:7,transition:"filter .15s"}}
-                          onMouseEnter={e=>(e.currentTarget as HTMLElement).style.filter="brightness(1.3)"}
-                          onMouseLeave={e=>(e.currentTarget as HTMLElement).style.filter="brightness(1)"}>
+                          borderRadius:7}}>
+                          <span style={{fontSize:10,color:"var(--muted)",width:20,textAlign:"center",flexShrink:0}}>{i+1}</span>
                           <span style={{fontSize:20,flexShrink:0}}>{s.avatar}</span>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontSize:12,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name.split(" ").slice(1).join(" ")}</div>
-                            {entry?<div className="mono" style={{fontSize:13,color:"var(--gold)",fontWeight:700}}>+{entry.xp} XP ({xpToScore(entry.xp)} คะแนน)</div>
-                                  :<div style={{fontSize:11,color:"var(--muted)"}}>ยังไม่ได้รับ</div>}
                           </div>
-                          <span style={{fontSize:12,color:"var(--muted)",flexShrink:0}}>✏️</span>
+                          <input type="number" min={0} defaultValue={entry?entry.xp:""} placeholder="—"
+                            onBlur={e=>updateEntryXpInline(act.name,s.id,e.target.value,act.maxXp,act.chapterId||"CH1",act.phase||"before")}
+                            onKeyDown={e=>{if(e.key==="Enter")(e.target as HTMLInputElement).blur();}}
+                            style={{width:52,fontSize:13,textAlign:"center",background:"rgba(10,20,38,.8)",
+                              border:"1px solid rgba(232,188,85,.4)",color:"var(--gold)",borderRadius:5,padding:"4px 6px",
+                              fontFamily:"'Share Tech Mono',monospace",outline:"none",flexShrink:0}}/>
+                          {entry&&<button onClick={()=>quickDeleteEntry(act.name,s.id)} title="ลบรายการนี้"
+                            style={{background:"transparent",border:"none",color:"var(--red)",cursor:"pointer",fontSize:13,padding:"0 2px",flexShrink:0}}>✕</button>}
                         </div>
                       );
                     })}
@@ -2619,6 +2688,15 @@ function TeacherGrades({students,setStudents,assignments}){
     if(total>=65)return"2.5";if(total>=60)return"2.0";if(total>=55)return"1.5";
     if(total>=50)return"1.0";return"0";
   }
+  // เกรดทางการ (100 เต็ม) ที่ "ใช้จริง" — ถ้าครูตั้งเกรดเอง (ร/มส/0-4) ใช้ค่านั้นเสมอ ไม่งั้นคำนวณจากคะแนนตามปกติ
+  function normalizeOverrideOfficial(g:string){
+    if(g==="ร"||g==="มส")return g;
+    const n=parseFloat(g);return n===0?"0":n.toFixed(1);
+  }
+  function finalGradeOfficial(student:any){
+    if(student?.gradeOverride)return normalizeOverrideOfficial(student.gradeOverride);
+    return getGrade(getTotal(student));
+  }
   function gradeColor(g:string|null){
     if(!g)return"var(--muted)";
     const n=parseFloat(g);
@@ -2641,54 +2719,57 @@ function TeacherGrades({students,setStudents,assignments}){
 
   const sorted=[...students].sort((a:any,b:any)=>(getTotal(b)??-1)-(getTotal(a)??-1));
   const withGrades=students.filter((s:any)=>getTotal(s)!==null);
-  const passing=withGrades.filter((s:any)=>parseFloat(getGrade(getTotal(s))||"0")>0).length;
+  const withFinalGrade=students.filter((s:any)=>finalGradeOfficial(s)!=null);
+  const passing=withFinalGrade.filter((s:any)=>!isFailGrade(finalGradeOfficial(s))).length;
   const avg=withGrades.length>0?Math.round(withGrades.reduce((a:number,s:any)=>a+(getTotal(s)||0),0)/withGrades.length):null;
-  const gradeCounts:any={"4.0":0,"3.5":0,"3.0":0,"2.5":0,"2.0":0,"1.5":0,"1.0":0,"0":0};
-  students.forEach((s:any)=>{const g=getGrade(getTotal(s));if(g)gradeCounts[g]++;});
+  const gradeCountsOrderOfficial=["ร","มส","0","1.0","1.5","2.0","2.5","3.0","3.5","4.0"];
+  const gradeCounts:any={};gradeCountsOrderOfficial.forEach(g=>gradeCounts[g]=0);
+  students.forEach((s:any)=>{const g=finalGradeOfficial(s);if(g)gradeCounts[g]++;});
 
   useEffect(()=>{
     if(typeof Chart==="undefined")return;
-    ["gradeDistChart","scoreBreakChart","ppGroupBar"].forEach(id=>{
+    ["gradeDistChart","gradeBarChart","ppGroupBar"].forEach(id=>{
       const c=document.getElementById(id) as HTMLCanvasElement;
       if(c&&(c as any)._ci){(c as any)._ci.destroy();(c as any)._ci=null;}
     });
     if(tabG==="score"){
       Chart.defaults.color="#9aacbf";
+      const gradedTotal=withFinalGrade.length;
       const gc=document.getElementById("gradeDistChart") as HTMLCanvasElement;
       if(gc){
-        const gLabels=Object.keys(gradeCounts);
-        const gColors=gLabels.map(g=>{const n=parseFloat(g);return n>=3.5?"#4ecaae":n>=2.5?"#f5cc70":n>=1.5?"#e88c4a":"#e86060";});
+        const gLabels=gradeCountsOrderOfficial;
+        const gColors=gLabels.map(g=>{if(g==="ร")return"#eab308";if(g==="มส")return"#dc2626";const n=parseFloat(g);return n>=3.5?"#4ecaae":n>=2.5?"#f5cc70":n>=1.5?"#e88c4a":"#e86060";});
+        const gData=gLabels.map(g=>gradeCounts[g]);
         (gc as any)._ci=new Chart(gc,{
           type:"doughnut",
-          data:{labels:gLabels,datasets:[{data:Object.values(gradeCounts),backgroundColor:gColors,borderWidth:3,borderColor:"rgba(15,30,53,.9)"}]},
+          data:{labels:gLabels,datasets:[{data:gData,backgroundColor:gColors,borderWidth:3,borderColor:"rgba(15,30,53,.9)"}]},
           options:{responsive:true,maintainAspectRatio:false,
             plugins:{
               legend:{display:true,position:"bottom" as const,labels:{color:"#9aacbf",font:{size:10},padding:8,boxWidth:10}},
-              tooltip:{callbacks:{label:(c:any)=>c.label+": "+c.raw+" คน ("+(Math.round(c.raw/students.length*100))+"%)"}},
+              tooltip:{callbacks:{label:(c:any)=>c.label+": "+c.raw+" คน ("+(gradedTotal?Math.round(c.raw/gradedTotal*1000)/10:0)+"%)"}},
               datalabels:{color:"#fff",font:{weight:"bold" as const,size:11},
-                formatter:(val:any)=>val>0?(val+" คน "+(Math.round(val/students.length*100))+"%"):"" ,
+                formatter:(val:any)=>val>0?(val+" คน ("+(gradedTotal?Math.round(val/gradedTotal*1000)/10:0)+"%)"):"" ,
                 display:(ctx:any)=>ctx.dataset.data[ctx.dataIndex]>0}
             }
           }
         });
       }
-      const sc=document.getElementById("scoreBreakChart") as HTMLCanvasElement;
-      if(sc){
-        const top8=sorted.slice(0,8);
-        (sc as any)._ci=new Chart(sc,{
+      const bc=document.getElementById("gradeBarChart") as HTMLCanvasElement;
+      if(bc){
+        const gLabels=gradeCountsOrderOfficial;
+        const gColors=gLabels.map(g=>{if(g==="ร")return"#eab308";if(g==="มส")return"#dc2626";const n=parseFloat(g);return n>=3.5?"#4ecaae":n>=2.5?"#f5cc70":n>=1.5?"#e88c4a":"#e86060";});
+        const gData=gLabels.map(g=>gradeCounts[g]);
+        (bc as any)._ci=new Chart(bc,{
           type:"bar",
-          data:{
-            labels:top8.map((s:any)=>s.name.split(" ").slice(-1)[0]),
-            datasets:[
-              {label:"เก็บก่อนกลาง",data:top8.map((s:any)=>getS1(s)),backgroundColor:"#185FA5",borderRadius:2,stack:"a"},
-              {label:"กลางภาค",data:top8.map((s:any)=>s.midterm||0),backgroundColor:"#5DCAA5",borderRadius:2,stack:"a"},
-              {label:"เก็บหลังกลาง",data:top8.map((s:any)=>getS2(s)),backgroundColor:"#f472b6",borderRadius:2,stack:"a"},
-              {label:"ปลายภาค",data:top8.map((s:any)=>s.final||0),backgroundColor:"#e88c4a",borderRadius:2,stack:"a"},
-            ]
-          },
+          data:{labels:gLabels,datasets:[{label:"จำนวน",data:gData,backgroundColor:gColors,borderRadius:6}]},
           options:{responsive:true,maintainAspectRatio:false,
-            plugins:{legend:{display:false},datalabels:{display:false}},
-            scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,max:100,grid:{color:"rgba(232,188,85,.08)"}}}}
+            plugins:{legend:{display:false},
+              tooltip:{callbacks:{label:(c:any)=>c.raw+" คน ("+(gradedTotal?Math.round(c.raw/gradedTotal*1000)/10:0)+"%)"}},
+              datalabels:{color:"#fff",font:{weight:"bold" as const,size:10},anchor:"end" as const,align:"top" as const,
+                formatter:(val:any)=>val+" คน\n("+(gradedTotal?Math.round(val/gradedTotal*1000)/10:0)+"%)"}
+            },
+            scales:{y:{beginAtZero:true,ticks:{stepSize:1},grid:{color:"rgba(232,188,85,.08)"}},x:{grid:{display:false}}}
+          }
         });
       }
     }
@@ -2814,7 +2895,7 @@ function TeacherGrades({students,setStudents,assignments}){
   const rMid=(s:any)=>s.midterm??0;
   const rFinal=(s:any)=>s.final??0;
   const rGrand=(s:any)=>rBefore(s)+rMid(s)+rAfter(s)+rFinal(s);
-  const rGradeOf=(s:any)=>getGrade(rGrand(s));
+  const rGradeOf=(s:any)=>s.gradeOverride?normalizeOverrideOfficial(s.gradeOverride):getGrade(rGrand(s));
   const reportStudents=[...students].sort((a:any,b:any)=>Number(a.password||0)-Number(b.password||0));
   const rptTh:React.CSSProperties={border:"1px solid #000",padding:"4px 6px",fontSize:16,fontWeight:700,textAlign:"center",background:"#f0f0f0",wordBreak:"normal",overflowWrap:"normal"};
   const rptTd:React.CSSProperties={border:"1px solid #000",padding:"4px 6px",fontSize:16,textAlign:"center",wordBreak:"normal",overflowWrap:"normal"};
@@ -2839,7 +2920,7 @@ function TeacherGrades({students,setStudents,assignments}){
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:12,marginBottom:20}}>
             {[{icon:"👥",label:"นักเรียน",val:students.length,c:"var(--cyan)"},
               {icon:"✅",label:"ผ่านเกณฑ์",val:passing,c:"var(--green)"},
-              {icon:"❌",label:"ไม่ผ่าน",val:withGrades.length-passing,c:"var(--red)"},
+              {icon:"❌",label:"ไม่ผ่าน",val:withFinalGrade.length-passing,c:"var(--red)"},
               {icon:"📊",label:"คะแนนเฉลี่ย",val:avg!==null?avg+"":"รอกรอก",c:"var(--gold)"},
             ].map((s,i)=>(
               <div key={i} className="card" style={{textAlign:"center"}}>
@@ -2864,7 +2945,7 @@ function TeacherGrades({students,setStudents,assignments}){
               </thead>
               <tbody>
                 {sorted.map((s:any)=>{
-                  const s1=getS1(s),s2=getS2(s),total=getTotal(s),grade=getGrade(total);
+                  const s1=getS1(s),s2=getS2(s),total=getTotal(s),grade=finalGradeOfficial(s);
                   return(
                     <tr key={s.id} style={{borderBottom:"1px solid var(--border)"}}>
                       <td style={{padding:"10px 12px",fontSize:13,textAlign:"left"}}>
@@ -2900,21 +2981,38 @@ function TeacherGrades({students,setStudents,assignments}){
               </tbody>
             </table>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-            <div className="card">
-              <div className="cond" style={{fontSize:16,color:"var(--gold)",marginBottom:12}}>กราฟสรุปเกรด</div>
-              <div style={{position:"relative",height:220}}><canvas id="gradeDistChart"/></div>
+          {withFinalGrade.length===0?(
+            <div className="card" style={{textAlign:"center",padding:36}}>
+              <div style={{fontSize:32,marginBottom:10}}>📊</div>
+              <div className="cond" style={{fontSize:18,color:"var(--muted2)",fontWeight:700}}>ยังไม่มีใครมีเกรดสรุปครบ</div>
+              <div style={{fontSize:12,color:"var(--muted)",marginTop:6}}>ต้องกรอกคะแนนสอบกลางภาคและปลายภาคให้ครบก่อน กราฟจะขึ้นเองอัตโนมัติ</div>
             </div>
-            <div className="card">
-              <div className="cond" style={{fontSize:16,color:"var(--gold)",marginBottom:8}}>คะแนนรายส่วน (8 อันดับแรก)</div>
-              <div style={{display:"flex",gap:12,flexWrap:"wrap",fontSize:10,marginBottom:8}}>
-                {[["#185FA5","เก็บก่อนกลาง"],["#5DCAA5","กลางภาค"],["#f472b6","เก็บหลังกลาง"],["#e88c4a","ปลายภาค"]].map(([c,l])=>(
-                  <span key={l}><span style={{display:"inline-block",width:8,height:8,borderRadius:2,background:c,marginRight:3}}></span>{l}</span>
-                ))}
+          ):(<>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:12,marginBottom:16}}>
+              {[
+                {icon:"👥",label:"มีเกรดแล้ว",val:withFinalGrade.length,c:"var(--cyan)"},
+                {icon:"✅",label:`ผ่านเกณฑ์ (${Math.round(passing/withFinalGrade.length*1000)/10}%)`,val:passing,c:"var(--green)"},
+                {icon:"❌",label:`ไม่ผ่าน (${Math.round((withFinalGrade.length-passing)/withFinalGrade.length*1000)/10}%)`,val:withFinalGrade.length-passing,c:"var(--red)"},
+                {icon:"📊",label:"คะแนนเฉลี่ย",val:avg!==null?avg+"":"รอกรอก",c:"var(--gold)"},
+              ].map((st,i)=>(
+                <div key={i} className="card" style={{textAlign:"center"}}>
+                  <div style={{fontSize:20,marginBottom:4}}>{st.icon}</div>
+                  <div className="cond" style={{fontSize:typeof st.val==="number"?28:16,fontWeight:900,color:st.c}}>{st.val}</div>
+                  <div style={{fontSize:11,color:"var(--muted)",marginTop:2}}>{st.label}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+              <div className="card">
+                <div className="cond" style={{fontSize:16,color:"var(--gold)",marginBottom:12}}>จำนวนนักเรียนต่อเกรด</div>
+                <div style={{position:"relative",height:220}}><canvas id="gradeBarChart"/></div>
               </div>
-              <div style={{position:"relative",height:200}}><canvas id="scoreBreakChart"/></div>
+              <div className="card">
+                <div className="cond" style={{fontSize:16,color:"var(--gold)",marginBottom:12}}>กราฟสรุปเกรด</div>
+                <div style={{position:"relative",height:220}}><canvas id="gradeDistChart"/></div>
+              </div>
             </div>
-          </div>
+          </>)}
         </div>
       )}
 
@@ -3488,7 +3586,7 @@ async function syncStudentsToSheet(students,assignments){
       originalPassword:INIT_STUDENTS.find(x=>x.id===s.id)?.password||s.password,
       currentPassword:s.password,
       xp:s.xp,
-      grade:getRank(getEffectiveXP(s,assignments)).grade,
+      grade:finalGradeRank(s,assignments),
       rank:getRank(getEffectiveXP(s,assignments)).label,
       midterm:s.midterm,
       final:s.final,
@@ -3675,7 +3773,7 @@ export default function App(){
           {role==="teacher"&&page==="students"     &&<TeacherStudents students={students} assignments={assignments} setStudents={setStudents} studentsLoadOk={studentsLoadOk}/>}
           {role==="teacher"&&page==="t-assignments"&&<TeacherAssignments assignments={assignments} setAssignments={setAssignments} students={students} setStudents={setStudents} skipNextSave={skipNextSave} refreshFromSheet={refreshFromSheet}/>}
           {role==="teacher"&&page==="t-resources"  &&<TeacherResources resources={resources} setResources={setResources}/>}
-          {role==="teacher"&&page==="t-scores"     &&<TeacherScores students={students} setStudents={setStudents} assignments={assignments}/>}
+          {role==="teacher"&&page==="t-scores"     &&<TeacherScores students={students} setStudents={setStudents} assignments={assignments} studentsLoadOk={studentsLoadOk}/>}
           {role==="teacher"&&page==="t-exam"       &&<TeacherExamScores students={students} setStudents={setStudents}/>}
           {role==="teacher"&&page==="t-grades"     &&<TeacherGrades students={students} setStudents={setStudents} assignments={assignments}/>}
           {role==="teacher"&&page==="t-airdrop"    &&<TeacherAirdrop students={students} setPendingAirdrop={setPendingAirdrop} setStudents={setStudents} studentsLoadOk={studentsLoadOk}/>}
