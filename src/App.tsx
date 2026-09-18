@@ -2897,6 +2897,42 @@ function TeacherGrades({students,setStudents,assignments}){
   const rGrand=(s:any)=>rBefore(s)+rMid(s)+rAfter(s)+rFinal(s);
   const rGradeOf=(s:any)=>s.gradeOverride?normalizeOverrideOfficial(s.gradeOverride):getGrade(rGrand(s));
   const reportStudents=[...students].sort((a:any,b:any)=>Number(a.password||0)-Number(b.password||0));
+  // ─── ส่งออกรายงานเป็นไฟล์ Excel (.xlsx) — เปิดได้ตรงใน Google Sheets เลย (อัปโหลดขึ้น Drive แล้วเปิดด้วย Google Sheets หรือ File > Import) โหลดไลบรารีจาก CDN ตอนกดใช้เท่านั้น ───
+  function loadXLSX(){
+    return new Promise<any>((resolve,reject)=>{
+      if((window as any).XLSX){resolve((window as any).XLSX);return;}
+      const script=document.createElement("script");
+      script.src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js";
+      script.onload=()=>resolve((window as any).XLSX);
+      script.onerror=()=>reject(new Error("โหลดไลบรารี Excel ไม่สำเร็จ ลองเช็คอินเทอร์เน็ตแล้วลองใหม่"));
+      document.head.appendChild(script);
+    });
+  }
+  async function exportXLSX(){
+    let XLSXLib:any;
+    try{ XLSXLib=await loadXLSX(); }
+    catch(e){ alert("โหลดไลบรารี Excel ไม่สำเร็จ — เช็คอินเทอร์เน็ตแล้วลองอีกครั้ง"); return; }
+    const headerRow=[
+      "ลำดับ","เลขประจำตัว","ชื่อ-สกุล",
+      ...beforeShown.map((it:any)=>`${it.name} (${it.max})`),
+      "รวมก่อนกลางภาค (35)","สอบกลางภาค (15)","รวมกลางภาค (50)",
+      ...afterShown.map((it:any)=>`${it.name} (${it.max})`),
+      "รวมหลังกลางภาค (35)","สอบปลายภาค (15)","รวม (100)","เกรด",
+    ];
+    const rows=reportStudents.map((s:any,i:number)=>[
+      i+1,s.password,s.name,
+      ...beforeShown.map((it:any)=>it.score(s)),
+      rBefore(s),s.midterm??"",rBefore(s)+rMid(s),
+      ...afterShown.map((it:any)=>it.score(s)),
+      rAfter(s),s.final??"",rGrand(s),rGradeOf(s)??"",
+    ]);
+    const ws=XLSXLib.utils.aoa_to_sheet([[`${rptSchool} — ${rptSubject}`],[`${rptClass}  ${rptTerm}`],[],headerRow,...rows]);
+    ws["!cols"]=headerRow.map((h:string,idx:number)=>({wch:idx===2?24:Math.max(10,h.length+2)}));
+    const wb=XLSXLib.utils.book_new();
+    XLSXLib.utils.book_append_sheet(wb,ws,"รายงานคะแนน");
+    const stamp=new Date().toLocaleDateString("th-TH",{day:"2-digit",month:"2-digit",year:"numeric"}).replace(/\//g,"-");
+    XLSXLib.writeFile(wb,`รายงานคะแนน-${stamp}.xlsx`);
+  }
   const rptTh:React.CSSProperties={border:"1px solid #000",padding:"4px 6px",fontSize:16,fontWeight:700,textAlign:"center",background:"#f0f0f0",wordBreak:"normal",overflowWrap:"normal"};
   const rptTd:React.CSSProperties={border:"1px solid #000",padding:"4px 6px",fontSize:16,textAlign:"center",wordBreak:"normal",overflowWrap:"normal"};
   // ชื่อรายการใบงาน/กิจกรรมอาจยาว ลดขนาดเหลือ 14 ได้ถ้าตัวใหญ่ไม่พอ แต่ยังต้องตัดคำถูกหลักภาษาไทย (ไม่ตัดกลางคำมั่ว)
@@ -3174,6 +3210,7 @@ function TeacherGrades({students,setStudents,assignments}){
               ))}
             </div>
             <button className="btn btn-gold" onClick={()=>window.print()} style={{fontSize:14,padding:"10px 24px"}}>🖨️ พิมพ์ / บันทึกเป็น PDF</button>
+            <button className="btn-ghost" onClick={exportXLSX} style={{fontSize:13,padding:"9px 20px",marginTop:12,marginLeft:10,borderColor:"rgba(94,200,126,.5)",color:"var(--green)"}}>📗 ดาวน์โหลดเป็น Excel / Google Sheets (.xlsx)</button>
             <div style={{fontSize:11,color:"var(--muted)",marginTop:8}}>💡 ตารางกว้างมาก แนะนำตั้งค่าพิมพ์เป็นแนวนอน (Landscape) และ "พอดีหน้ากระดาษ" ในหน้าต่างพิมพ์ของเบราว์เซอร์</div>
           </div>
 
