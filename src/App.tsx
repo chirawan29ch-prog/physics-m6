@@ -579,6 +579,8 @@ function LoginScreen({students,onLogin}){
           <div className="cond" style={{fontSize:56,fontWeight:900,letterSpacing:6,color:"var(--gold2)",lineHeight:1,textShadow:"0 0 40px rgba(232,188,85,.6)"}}>PHYSICS</div>
           <div className="cond" style={{fontSize:22,fontWeight:600,letterSpacing:14,color:"var(--muted2)",marginTop:2}}>BATTLEGROUND</div>
           <div className="mono" style={{fontSize:11,color:"var(--muted)",marginTop:8,letterSpacing:3}}>── QUANTUM SEASON 2568 ──</div>
+          {SETTINGS.subject&&<div style={{fontSize:22,fontWeight:700,marginTop:14,color:"var(--gold2)",textShadow:"0 0 20px rgba(0,0,0,.35)"}}>📘 {SETTINGS.subject}</div>}
+          {SETTINGS.termLabel&&SETTINGS.subject&&<div style={{fontSize:13,color:"var(--muted2)",marginTop:2}}>{SETTINGS.termLabel}</div>}
         </div>
         <div className="card fade-up" style={{animationDelay:".1s",background:"rgba(18,36,62,.9)",backdropFilter:"blur(20px)",border:"1px solid rgba(232,188,85,.3)"}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4,marginBottom:22,background:"rgba(18,32,52,.8)",borderRadius:6,padding:4}}>
@@ -621,16 +623,28 @@ function LoginScreen({students,onLogin}){
 // ─────────────────────────────────────────────
 // TOP NAV
 // ─────────────────────────────────────────────
-function TopNav({user,role,page,setPage,onLogout,assignments}){
+function TopNav({user,role,page,setPage,onLogout,assignments,studentsLoadOk}){
   const sTabs=[{id:"dashboard",label:"DASHBOARD"},{id:"resources",label:"บทเรียน"},{id:"assignments",label:"ส่งงาน"},{id:"ranking",label:"TOP 3"},{id:"inventory",label:"AIRDROP"},{id:"settings",label:"ตั้งค่า"}];
-  const tTabs=[{id:"overview",label:"OVERVIEW"},{id:"students",label:"STUDENTS"},{id:"t-assignments",label:"📋 งาน"},{id:"t-resources",label:"📁 ไฟล์"},{id:"t-scores",label:"⭐ XP"},{id:"t-exam",label:"📝 สอบ"},{id:"t-grades",label:"📊 คะแนน"},{id:"t-airdrop",label:"📦 AIRDROP"},{id:"ranking",label:"RANKING"}];
+  const tTabs=[{id:"overview",label:"OVERVIEW"},{id:"students",label:"STUDENTS"},{id:"t-assignments",label:"📋 งาน"},{id:"t-resources",label:"📁 ไฟล์"},{id:"t-scores",label:"⭐ XP"},{id:"t-exam",label:"📝 สอบ"},{id:"t-grades",label:"📊 คะแนน"},{id:"t-airdrop",label:"📦 AIRDROP"},{id:"t-term",label:"📚 เทอม"},{id:"ranking",label:"RANKING"}];
   const tabs=role==="teacher"?tTabs:sTabs;
   return(
     <div style={{position:"sticky",top:0,zIndex:100,background:"rgba(12,24,42,.96)",backdropFilter:"blur(20px)",borderBottom:"1px solid var(--border)"}}>
       <div style={{maxWidth:1200,margin:"0 auto",padding:"8px 16px"}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,flexWrap:"wrap"}}>
           <div className="cond" style={{fontSize:"clamp(16px,4vw,20px)",fontWeight:900,color:"var(--gold)",letterSpacing:2,flexShrink:0,whiteSpace:"nowrap",textShadow:"0 0 18px rgba(232,188,85,.5)"}}>⚡ PHYS·BG</div>
+          <span className="mono" title="ห้อง / วิชา / เทอมที่ระบบกำลังใช้อยู่" style={{fontSize:12,fontWeight:600,color:"var(--text)",letterSpacing:.5,flex:"1 1 auto",minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{ROOM_LABEL}{SETTINGS.subject?` · ${SETTINGS.subject}`:""} · {SETTINGS.termLabel}</span>
           <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+            {role==="teacher"&&(
+              <span title={studentsLoadOk?"เชื่อมต่อฐานข้อมูลสำเร็จ — บันทึกได้ตามปกติ":"⚠️ ยังไม่ได้เชื่อมต่อข้อมูลนักเรียนจริง — การแก้ไขใดๆ ตอนนี้จะไม่ถูกบันทึก! ลองรีเฟรชหน้าใหม่"}
+                style={{display:"flex",alignItems:"center",gap:5,fontSize:10,padding:"4px 9px",borderRadius:20,flexShrink:0,whiteSpace:"nowrap",
+                  background:studentsLoadOk?"rgba(94,200,126,.12)":"rgba(232,96,96,.18)",
+                  border:`1px solid ${studentsLoadOk?"rgba(94,200,126,.4)":"rgba(232,96,96,.6)"}`,
+                  color:studentsLoadOk?"var(--green)":"var(--red)"}}>
+                <span style={{width:7,height:7,borderRadius:"50%",background:studentsLoadOk?"var(--green)":"var(--red)",
+                  animation:studentsLoadOk?"none":"pulse 1s ease-in-out infinite"}}/>
+                {studentsLoadOk?"เชื่อมต่อแล้ว":"ยังไม่พร้อมบันทึก"}
+              </span>
+            )}
             <span style={{fontSize:20,flexShrink:0}}>{user?.avatar||"👩‍✈️"}</span>
             <div style={{lineHeight:1.3,minWidth:0}}>
               <div style={{fontSize:12,color:"var(--text)",maxWidth:"28vw",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user?.name||"Commander"}</div>
@@ -673,6 +687,7 @@ const PAGE_META = {
   "t-exam":       {label:"คะแนนสอบ",      back:"overview"},
   "t-grades":     {label:"สรุปคะแนนรวม",  back:"overview"},
   "t-airdrop":    {label:"AIRDROP",       back:"overview"},
+  "t-term":       {label:"จัดการเทอม",    back:"overview"},
 };
 
 function PageHeader({page,setPage}){
@@ -1273,11 +1288,12 @@ function StudentSettings({student,setStudents}){
 // ─────────────────────────────────────────────
 // TEACHER: EXAM SCORES
 // ─────────────────────────────────────────────
-function TeacherExamScores({students,setStudents}){
+function TeacherExamScores({students,setStudents,studentsLoadOk}){
   const [midScores,setMidScores]=useState(()=>{const m={};students.forEach(s=>{m[s.id]=s.midterm!==null&&s.midterm!==undefined?String(s.midterm):"";});return m;});
   const [finalScores,setFinalScores]=useState(()=>{const m={};students.forEach(s=>{m[s.id]=s.final!==null&&s.final!==undefined?String(s.final):"";});return m;});
   const [saved,setSaved]=useState(false);
   function saveAll(){
+    if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (เพื่อป้องกันข้อมูลเสียหาย)");return;}
     setStudents(prev=>prev.map(s=>({...s,
       midterm:midScores[s.id]!==""?Number(midScores[s.id]):null,
       final:finalScores[s.id]!==""?Number(finalScores[s.id]):null,
@@ -2226,6 +2242,7 @@ function TeacherScores({students,setStudents,assignments,studentsLoadOk}){
   const [editEntry,setEditEntry]=useState<any>(null); // {activityName, studentId, studentName, xp, maxXp, isNew}
   function saveEditEntry(){
     if(!editEntry)return;
+    if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (เพื่อป้องกันข้อมูลเสียหาย)");return;}
     const{activityName,studentId,xp,maxXp}=editEntry;
     const newXp=Number(xp);
     if(isNaN(newXp)||newXp<0){toast("กรุณาใส่ XP ให้ถูกต้อง",true);return;}
@@ -2250,6 +2267,7 @@ function TeacherScores({students,setStudents,assignments,studentsLoadOk}){
   }
   function deleteEditEntry(){
     if(!editEntry||editEntry.isNew)return;
+    if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (เพื่อป้องกันข้อมูลเสียหาย)");return;}
     const{activityName,studentId,studentName}=editEntry;
     setStudents((prev:any)=>prev.map((s:any)=>{
       if(s.id!==studentId)return s;
@@ -2262,7 +2280,8 @@ function TeacherScores({students,setStudents,assignments,studentsLoadOk}){
     toast(`🗑 ลบ XP ของ ${studentName} ในกิจกรรมนี้แล้ว (กลับเป็นยังไม่ได้คะแนน)`);
     setEditEntry(null);
   }
-  // แก้ไข/ลบ XP ต่อคนตรงในหน้าสรุปรายงานได้เลย (ไม่ต้องเปิด popup)
+
+  // แก้ไข XP รายคนตรงในหน้าสรุปรายงานได้เลย (ไม่ต้องเปิด popup) — พิมพ์แล้วกดออกจากช่อง (blur) บันทึกทันที
   function updateEntryXpInline(activityName:string,studentId:string,newXpStr:string,actMaxXp:number,chapterId:string,phase:string){
     if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (เพื่อป้องกันข้อมูลเสียหาย)");return;}
     const newXp=Number(newXpStr);
@@ -2282,6 +2301,7 @@ function TeacherScores({students,setStudents,assignments,studentsLoadOk}){
       return{...s,xp:s.xp+diff,xpLog:newLog};
     }));
   }
+  // ลบ XP รายคนตรงในหน้าสรุปรายงานได้เลย (ไม่ต้องเปิด popup)
   function quickDeleteEntry(activityName:string,studentId:string){
     if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (เพื่อป้องกันข้อมูลเสียหาย)");return;}
     setStudents((prev:any)=>prev.map((s:any)=>{
@@ -2294,7 +2314,7 @@ function TeacherScores({students,setStudents,assignments,studentsLoadOk}){
     }));
   }
 
-  function toast(t,isErr=false){setMsg({text:t,err:isErr});setTimeout(()=>setMsg(null),3500);}
+  function toast(t,isErr=false){setMsg({text:t,err:isErr});setTimeout(()=>setMsg(null),5000);}
   // เช็คว่านักเรียนคนนี้เคยได้รับ "กิจกรรมที่กำลังตั้งค่าอยู่ตอนนี้" ไปแล้วหรือยัง (สำหรับงานกลุ่ม บันทึกได้หลายรอบ)
   function alreadyGiven(s:any){return activityName.trim()&&(s.xpLog||[]).some((l:any)=>l.activity===activityName.trim());}
   function givenEntry(s:any){return (s.xpLog||[]).find((l:any)=>l.activity===activityName.trim());}
@@ -2309,6 +2329,7 @@ function TeacherScores({students,setStudents,assignments,studentsLoadOk}){
     setPerStuXp((p:any)=>{const n={...p};ids.forEach(id=>n[id]=v);return n;});
   }
   function undoDuringSession(studentId:string){
+    if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (เพื่อป้องกันข้อมูลเสียหาย)");return;}
     setStudents((prev:any)=>prev.map((s:any)=>{
       if(s.id!==studentId)return s;
       const idx=(s.xpLog||[]).findIndex((l:any)=>l.activity===activityName.trim());
@@ -2319,12 +2340,18 @@ function TeacherScores({students,setStudents,assignments,studentsLoadOk}){
     }));
   }
   function finishGroup(){
+    // ถ้ามีคนที่เลือก+กรอกคะแนนไว้แล้วแต่ยังไม่ได้กด "บันทึกกลุ่มนี้" ให้เตือนก่อนทิ้ง กันพลาดกดเสร็จสิ้นเผลอทิ้งข้อมูลที่กรอกไว้
+    const pendingCount=selectedIds().length;
+    if(pendingCount>0){
+      if(!window.confirm(`มีนักเรียนที่เลือกไว้ ${pendingCount} คน ยังไม่ได้กด "บันทึกกลุ่มนี้" — ถ้ากด "เสร็จสิ้น" ตอนนี้ข้อมูลที่กรอกไว้จะหายไปทันที (ไม่ถูกบันทึก) ต้องการดำเนินการต่อไหม?`))return;
+    }
     setMaxXpAmt("");setActivityName("");setSelChapter("CH1");setSelPhase("before");
     setSelected({});setPerStuXp({});setBulkFillValue("");
   }
 
   function saveEditActivity(){
     if(!editAct)return;
+    if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (เพื่อป้องกันข้อมูลเสียหาย)");return;}
     const{oldName,newName,newChapterId,newMaxXp,newPhase,oldMaxXp}=editAct;
     if(!newName.trim()){toast("กรุณาใส่ชื่อกิจกรรม",true);return;}
     const newMax=Number(newMaxXp)||0;
@@ -2347,6 +2374,7 @@ function TeacherScores({students,setStudents,assignments,studentsLoadOk}){
   }
 
   function deleteActivity(name){
+    if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (เพื่อป้องกันข้อมูลเสียหาย)");return;}
     if(!window.confirm(`ลบกิจกรรม "${name}" ออกจากนักเรียนทุกคนเลยไหม? (คะแนนที่เคยให้ไปจะถูกหักออกด้วย)`))return;
     setStudents((prev:any)=>prev.map((s:any)=>{
       const removed=(s.xpLog||[]).filter((log:any)=>log.activity===name);
@@ -2358,6 +2386,7 @@ function TeacherScores({students,setStudents,assignments,studentsLoadOk}){
   }
 
   function doAdd(){
+    if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (เพื่อป้องกันข้อมูลเสียหาย)");return;}
     if(!maxXpAmt||Number(maxXpAmt)<=0){toast("กรุณาใส่ XP เต็มของกิจกรรมนี้",true);return;}
     if(!activityName.trim()){toast("กรุณาใส่ชื่องาน/กิจกรรม",true);return;}
     const ids=selectedIds().filter(id=>!alreadyGiven(students.find((s:any)=>s.id===id)));
@@ -2405,10 +2434,11 @@ function TeacherScores({students,setStudents,assignments,studentsLoadOk}){
         <button style={tabStyle("add")} onClick={()=>setTab("add")}>⭐ เพิ่ม XP</button>
         <button style={tabStyle("summary")} onClick={()=>setTab("summary")}>📊 สรุปรายงาน</button>
       </div>
-      {msg&&<div style={{background:msg.err?"rgba(232,96,96,.14)":"rgba(94,200,126,.14)",
-        border:`1px solid ${msg.err?"rgba(232,96,96,.4)":"rgba(94,200,126,.4)"}`,
-        borderRadius:7,padding:"13px 18px",color:msg.err?"var(--red)":"var(--green)",
-        fontSize:14,marginBottom:16,textAlign:"center"}}>{msg.text}</div>}
+      {msg&&<div style={{position:"fixed",top:84,left:"50%",transform:"translateX(-50%)",zIndex:3000,maxWidth:"92vw",minWidth:260,boxShadow:"0 8px 28px rgba(0,0,0,.55)",
+        background:msg.err?"rgba(60,22,26,.98)":"rgba(18,52,38,.98)",
+        border:`1px solid ${msg.err?"rgba(232,96,96,.8)":"rgba(94,200,126,.8)"}`,
+        borderRadius:8,padding:"14px 22px",color:msg.err?"var(--red)":"var(--green)",
+        fontSize:15,fontWeight:600,textAlign:"center"}}>{msg.text}</div>}
 
       {tab==="add"&&(
         <>
@@ -2700,19 +2730,20 @@ function TeacherScores({students,setStudents,assignments,studentsLoadOk}){
 // ─────────────────────────────────────────────
 // TEACHER: GRADES SUMMARY + PRE/POST TEST
 // ─────────────────────────────────────────────
-function TeacherGrades({students,setStudents,assignments}){
+function TeacherGrades({students,setStudents,assignments,studentsLoadOk,initSubject,initTerm,initSchool}:any){
   const [tabG,setTabG]=useState("score");
   useEffect(()=>{window.scrollTo(0,0);},[tabG]);
   const [maxPP,setMaxPP]=useState(20);
   // ─── ข้อมูลหัวกระดาษรายงานทางการ (ไม่ได้เก็บในระบบ ให้ครูกรอกเองก่อนพิมพ์แต่ละครั้ง) ───
-  const [rptSchool,setRptSchool]=useState("โรงเรียน..............................................");
-  const [rptSubject,setRptSubject]=useState("รายวิชา.......................................... รหัสวิชา....................");
+  const [rptSchool,setRptSchool]=useState(initSchool||SETTINGS.school||"โรงเรียน..............................................");
+  const [rptSubject,setRptSubject]=useState(initSubject||(SETTINGS.subject?`รายวิชา ${SETTINGS.subject}  รหัสวิชา....................`:"รายวิชา.......................................... รหัสวิชา...................."));
   const [rptClass,setRptClass]=useState("ชั้น..........................");
-  const [rptTerm,setRptTerm]=useState("ภาคเรียนที่ .......... ปีการศึกษา ..........");
+  const [rptTerm,setRptTerm]=useState(initTerm||"ภาคเรียนที่ .......... ปีการศึกษา ..........");
   // คะแนน pre/post-test เก็บตรงในตัวนักเรียนแต่ละคน (student.pretest/posttest) แล้วบันทึกทันทีที่แก้
   // เพื่อให้รอดจากการสลับแท็บ/รีเฟรชหน้า เหมือนข้อมูลอื่นๆ ในระบบ (ไม่ใช่ state ชั่วคราวเหมือนเดิม)
   function getPP(st:any){return{pre:st.pretest??null,post:st.posttest??null};}
   function setPP(studentId:string,field:"pretest"|"posttest",value:number|null){
+    if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (คะแนนนี้จะไม่ถูกบันทึก)");return;}
     setStudents((prev:any)=>prev.map((s:any)=>s.id===studentId?{...s,[field]:value}:s));
   }
   const [saved,setSaved]=useState(false);
@@ -2766,6 +2797,7 @@ function TeacherGrades({students,setStudents,assignments}){
     return{key:"w",bg:"#ef4444"};
   }
   function saveAll(){
+    if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลนักเรียนจริงจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บใหม่ก่อนแก้ไข (เพื่อป้องกันข้อมูลเสียหาย)");return;}
     setStudents((prev:any)=>prev.map((s:any)=>({
       ...s,
       midterm:editMid[s.id]!==""?Number(editMid[s.id]):null,
@@ -2907,45 +2939,27 @@ function TeacherGrades({students,setStudents,assignments}){
     });
     return[...assignItems,...actItems];
   }
-  const beforeItems=buildPhaseItems("before");
-  const afterItems=buildPhaseItems("after");
-  // ─── จัดลำดับ/ซ่อน-แสดงคอลัมน์รายงานได้เอง — ดีฟอลต์ตามลำดับที่ตรวจพบ แต่ครูปรับเองได้ก่อนพิมพ์แต่ละครั้ง ───
-  const[beforeOrder,setBeforeOrder]=useState<{key:string,visible:boolean}[]>([]);
-  const[afterOrder,setAfterOrder]=useState<{key:string,visible:boolean}[]>([]);
-  const beforeKeysSig=beforeItems.map((it:any)=>it.key).join("|");
-  const afterKeysSig=afterItems.map((it:any)=>it.key).join("|");
-  useEffect(()=>{
-    setBeforeOrder(prev=>{
-      const stillExist=prev.filter(o=>beforeItems.some((it:any)=>it.key===o.key));
-      const existingKeys=new Set(stillExist.map(o=>o.key));
-      const newOnes=beforeItems.filter((it:any)=>!existingKeys.has(it.key)).map((it:any)=>({key:it.key,visible:true}));
-      return[...stillExist,...newOnes];
-    });
-  },[beforeKeysSig]);
-  useEffect(()=>{
-    setAfterOrder(prev=>{
-      const stillExist=prev.filter(o=>afterItems.some((it:any)=>it.key===o.key));
-      const existingKeys=new Set(stillExist.map(o=>o.key));
-      const newOnes=afterItems.filter((it:any)=>!existingKeys.has(it.key)).map((it:any)=>({key:it.key,visible:true}));
-      return[...stillExist,...newOnes];
-    });
-  },[afterKeysSig]);
-  function moveOrder(setFn:any,idx:number,dir:number){
-    setFn((prev:any[])=>{
-      const next=[...prev];
-      const j=idx+dir;
-      if(j<0||j>=next.length)return prev;
-      [next[idx],next[j]]=[next[j],next[idx]];
-      return next;
-    });
+  // ─── คอลัมน์ที่ครูเพิ่มเอง (ไม่ผูกกับข้อมูลใบงาน/กิจกรรมในระบบ) — กรอกคะแนนแยกเฉพาะสำหรับรายงานนี้ ───
+  const[customCols,setCustomCols]=useState<{key:string,name:string,max:number,phase:string,scores:any}[]>([]);
+  function addCustomCol(phase:string){
+    const key="custom_"+Date.now();
+    setCustomCols(prev=>[...prev,{key,name:"รายการใหม่",max:10,phase,scores:{}}]);
   }
-  function toggleVisible(setFn:any,key:string){
-    setFn((prev:any[])=>prev.map(o=>o.key===key?{...o,visible:!o.visible}:o));
+  function updateCustomCol(key:string,field:string,value:any){
+    setCustomCols(prev=>prev.map(c=>c.key===key?{...c,[field]:value}:c));
   }
-  const beforeShown=(beforeOrder.length?beforeOrder:beforeItems.map((it:any)=>({key:it.key,visible:true})))
-    .filter(o=>o.visible).map(o=>beforeItems.find((it:any)=>it.key===o.key)).filter(Boolean);
-  const afterShown=(afterOrder.length?afterOrder:afterItems.map((it:any)=>({key:it.key,visible:true})))
-    .filter(o=>o.visible).map(o=>afterItems.find((it:any)=>it.key===o.key)).filter(Boolean);
+  function setCustomScore(key:string,studentId:string,value:string){
+    setCustomCols(prev=>prev.map(c=>c.key===key?{...c,scores:{...c.scores,[studentId]:value}}:c));
+  }
+  function removeCustomCol(key:string){
+    setCustomCols(prev=>prev.filter(c=>c.key!==key));
+  }
+  const beforeItemsAuto=buildPhaseItems("before");
+  const afterItemsAuto=buildPhaseItems("after");
+  const customBeforeItems=customCols.filter(c=>c.phase==="before").map(c=>({key:c.key,name:c.name,max:c.max,score:(s:any)=>Number(c.scores[s.id])||0,isCustom:true}));
+  const customAfterItems=customCols.filter(c=>c.phase==="after").map(c=>({key:c.key,name:c.name,max:c.max,score:(s:any)=>Number(c.scores[s.id])||0,isCustom:true}));
+  const beforeItems=[...beforeItemsAuto,...customBeforeItems];
+  const afterItems=[...afterItemsAuto,...customAfterItems];
   function subtotal(s:any,items:any[],cap:number){return Math.min(cap,items.reduce((sum,it)=>sum+it.score(s),0));}
   const rBefore=(s:any)=>subtotal(s,beforeItems,35);
   const rAfter=(s:any)=>subtotal(s,afterItems,35);
@@ -3003,6 +3017,66 @@ function TeacherGrades({students,setStudents,assignments}){
   // โทนสีอ่อนสบายตาสำหรับแต่ละช่วงคะแนน (พื้นกระดาษขาว) — ใช้แนวสีเดียวกับตารางคะแนนในหน้าเว็บ แต่จางลงให้เหมาะกับพิมพ์
   const rptC={before:"#f3e8ff",beforeTot:"#e9d5ff",mid:"#e0f2fe",midTot:"#bfdbfe",after:"#fce7f3",afterTot:"#fbcfe8",final:"#fef9c3",grand:"#fde68a",grade:"#dcfce7"};
   function tint(base:React.CSSProperties,bg:string):React.CSSProperties{return{...base,background:bg};}
+
+  // ─── ส่งออกรายงานเป็นไฟล์ PowerPoint (.pptx) แก้ไขต่อได้ — โหลดไลบรารีจาก CDN ตอนกดใช้เท่านั้น ไม่กระทบขนาดเว็บปกติ ───
+  function loadPptxGenJS(){
+    return new Promise<any>((resolve,reject)=>{
+      if((window as any).PptxGenJS){resolve((window as any).PptxGenJS);return;}
+      const script=document.createElement("script");
+      script.src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js";
+      script.onload=()=>resolve((window as any).PptxGenJS);
+      script.onerror=()=>reject(new Error("โหลดไลบรารี PowerPoint ไม่สำเร็จ ลองเช็คอินเทอร์เน็ตแล้วลองใหม่"));
+      document.head.appendChild(script);
+    });
+  }
+  async function exportPPTX(){
+    let PptxGenJSCtor:any;
+    try{ PptxGenJSCtor=await loadPptxGenJS(); }
+    catch(e){ alert("โหลดไลบรารี PowerPoint ไม่สำเร็จ — เช็คอินเทอร์เน็ตแล้วลองอีกครั้ง"); return; }
+    const pptx=new PptxGenJSCtor();
+    pptx.defineLayout({name:"WIDE",width:13.33,height:7.5});
+    pptx.layout="WIDE";
+    const headerCells=[
+      {text:"ลำดับ",options:{bold:true,fill:{color:"F0F0F0"},fontSize:9}},
+      {text:"เลขประจำตัว",options:{bold:true,fill:{color:"F0F0F0"},fontSize:9}},
+      {text:"ชื่อ-สกุล",options:{bold:true,fill:{color:"F0F0F0"},fontSize:9}},
+      ...beforeShown.map((it:any)=>({text:`${it.name} (${it.max})`,options:{bold:true,fill:{color:"F3E8FF"},fontSize:8}})),
+      {text:"รวม",options:{bold:true,fill:{color:"E9D5FF"},fontSize:9}},
+      {text:"สอบกลางภาค (15)",options:{bold:true,fill:{color:"E0F2FE"},fontSize:9}},
+      {text:"รวมกลางภาค (50)",options:{bold:true,fill:{color:"BFDBFE"},fontSize:9}},
+      ...afterShown.map((it:any)=>({text:`${it.name} (${it.max})`,options:{bold:true,fill:{color:"FCE7F3"},fontSize:8}})),
+      {text:"รวม",options:{bold:true,fill:{color:"FBCFE8"},fontSize:9}},
+      {text:"สอบปลายภาค (15)",options:{bold:true,fill:{color:"FEF9C3"},fontSize:9}},
+      {text:"รวม (100)",options:{bold:true,fill:{color:"FDE68A"},fontSize:9}},
+      {text:"เกรด",options:{bold:true,fill:{color:"DCFCE7"},fontSize:9}},
+    ];
+    function studentRow(s:any,i:number){
+      return[
+        {text:String(i+1),options:{fontSize:8}},
+        {text:String(s.password),options:{fontSize:8}},
+        {text:s.name,options:{fontSize:8}},
+        ...beforeShown.map((it:any)=>({text:String(it.score(s)),options:{fontSize:8}})),
+        {text:String(rBefore(s)),options:{fontSize:8,bold:true}},
+        {text:String(s.midterm??"—"),options:{fontSize:8}},
+        {text:String(rBefore(s)+rMid(s)),options:{fontSize:8,bold:true}},
+        ...afterShown.map((it:any)=>({text:String(it.score(s)),options:{fontSize:8}})),
+        {text:String(rAfter(s)),options:{fontSize:8,bold:true}},
+        {text:String(s.final??"—"),options:{fontSize:8}},
+        {text:String(rGrand(s)),options:{fontSize:8,bold:true}},
+        {text:String(rGradeOf(s)??"—"),options:{fontSize:8,bold:true}},
+      ];
+    }
+    const rowsPerSlide=18;
+    for(let i=0;i<reportStudents.length;i+=rowsPerSlide){
+      const slide=pptx.addSlide();
+      slide.addText(`${rptSchool} — ${rptSubject}`,{x:0.3,y:0.15,w:12.7,h:0.35,fontSize:14,bold:true,align:"center"});
+      const chunk=reportStudents.slice(i,i+rowsPerSlide);
+      const rows=[headerCells,...chunk.map((s:any,j:number)=>studentRow(s,i+j))];
+      slide.addTable(rows,{x:0.15,y:0.6,w:13.0,h:6.6,fontSize:8,border:{type:"solid",color:"999999",pt:0.5},autoPage:false,colW:undefined});
+    }
+    const stamp=new Date().toLocaleDateString("th-TH",{day:"2-digit",month:"2-digit",year:"numeric"}).replace(/\//g,"-");
+    pptx.writeFile({fileName:`รายงานคะแนน-${stamp}.pptx`});
+  }
 
   return(
     <div className="fade-up" style={{padding:20,maxWidth:1000,margin:"0 auto"}}>
@@ -3273,7 +3347,6 @@ function TeacherGrades({students,setStudents,assignments}){
               ))}
             </div>
             <button className="btn btn-gold" onClick={()=>window.print()} style={{fontSize:14,padding:"10px 24px"}}>🖨️ พิมพ์ / บันทึกเป็น PDF</button>
-            <button className="btn-ghost" onClick={exportXLSX} style={{fontSize:13,padding:"9px 20px",marginTop:12,marginLeft:10,borderColor:"rgba(94,200,126,.5)",color:"var(--green)"}}>📗 ดาวน์โหลดเป็น Excel / Google Sheets (.xlsx)</button>
             <div style={{fontSize:11,color:"var(--muted)",marginTop:8}}>💡 ตารางกว้างมาก แนะนำตั้งค่าพิมพ์เป็นแนวนอน (Landscape) และ "พอดีหน้ากระดาษ" ในหน้าต่างพิมพ์ของเบราว์เซอร์</div>
           </div>
 
@@ -3282,30 +3355,72 @@ function TeacherGrades({students,setStudents,assignments}){
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))",gap:16}}>
               <div>
                 <div style={{fontSize:12,color:"#a78bfa",marginBottom:8,fontWeight:700}}>🟣 ก่อนกลางภาค</div>
-                {beforeOrder.map((o,i)=>{const it:any=beforeItems.find((x:any)=>x.key===o.key);if(!it)return null;return(
-                  <div key={o.key} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",marginBottom:4,
-                    background:o.visible?"rgba(167,139,250,.08)":"rgba(255,255,255,.03)",borderRadius:6,opacity:o.visible?1:.5}}>
-                    <input type="checkbox" checked={o.visible} onChange={()=>toggleVisible(setBeforeOrder,o.key)} style={{accentColor:"#a78bfa"}}/>
-                    <span style={{flex:1,fontSize:12,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.name}</span>
-                    <button onClick={()=>moveOrder(setBeforeOrder,i,-1)} disabled={i===0} style={{background:"transparent",border:"none",color:"var(--muted2)",cursor:i===0?"default":"pointer",opacity:i===0?.3:1,fontSize:14,padding:"0 4px"}}>▲</button>
-                    <button onClick={()=>moveOrder(setBeforeOrder,i,1)} disabled={i===beforeOrder.length-1} style={{background:"transparent",border:"none",color:"var(--muted2)",cursor:i===beforeOrder.length-1?"default":"pointer",opacity:i===beforeOrder.length-1?.3:1,fontSize:14,padding:"0 4px"}}>▼</button>
+                {beforeOrder.map((o,i)=>{const it:any=beforeItems.find((x:any)=>x.key===o.key);if(!it)return null;
+                  const isCustom=it.isCustom;const custCol:any=isCustom?customCols.find(c=>c.key===o.key):null;
+                  return(
+                  <div key={o.key} style={{marginBottom:4}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",
+                      background:o.visible?"rgba(167,139,250,.08)":"rgba(255,255,255,.03)",borderRadius:6,opacity:o.visible?1:.5}}>
+                      <input type="checkbox" checked={o.visible} onChange={()=>toggleVisible(setBeforeOrder,o.key)} style={{accentColor:"#a78bfa"}}/>
+                      {isCustom?
+                        <input value={custCol?.name||""} onChange={e=>updateCustomCol(o.key,"name",e.target.value)}
+                          style={{flex:1,fontSize:12,background:"rgba(0,0,0,.2)",border:"1px solid rgba(167,139,250,.3)",borderRadius:4,color:"var(--text)",padding:"3px 6px"}}/>
+                        :<span style={{flex:1,fontSize:12,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.name}</span>}
+                      {isCustom&&<input type="number" value={custCol?.max||0} onChange={e=>updateCustomCol(o.key,"max",Number(e.target.value)||0)}
+                        style={{width:44,fontSize:12,background:"rgba(0,0,0,.2)",border:"1px solid rgba(167,139,250,.3)",borderRadius:4,color:"var(--text)",padding:"3px 4px",textAlign:"center"}}/>}
+                      <button onClick={()=>moveOrder(setBeforeOrder,i,-1)} disabled={i===0} style={{background:"transparent",border:"none",color:"var(--muted2)",cursor:i===0?"default":"pointer",opacity:i===0?.3:1,fontSize:14,padding:"0 4px"}}>▲</button>
+                      <button onClick={()=>moveOrder(setBeforeOrder,i,1)} disabled={i===beforeOrder.length-1} style={{background:"transparent",border:"none",color:"var(--muted2)",cursor:i===beforeOrder.length-1?"default":"pointer",opacity:i===beforeOrder.length-1?.3:1,fontSize:14,padding:"0 4px"}}>▼</button>
+                      {isCustom&&<button onClick={()=>removeCustomCol(o.key)} style={{background:"transparent",border:"none",color:"var(--red)",cursor:"pointer",fontSize:13,padding:"0 4px"}}>🗑</button>}
+                    </div>
+                    {isCustom&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:4,padding:"6px 8px 2px 20px"}}>
+                      {students.map((s:any)=>(
+                        <div key={s.id} style={{display:"flex",alignItems:"center",gap:4}}>
+                          <span style={{fontSize:10,color:"var(--muted2)",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name.split(" ").slice(1).join(" ")}</span>
+                          <input type="number" value={custCol?.scores?.[s.id]??""} placeholder="—" onChange={e=>setCustomScore(o.key,s.id,e.target.value)}
+                            style={{width:40,fontSize:11,background:"rgba(0,0,0,.25)",border:"1px solid rgba(167,139,250,.25)",borderRadius:4,color:"#a78bfa",padding:"2px 4px",textAlign:"center"}}/>
+                        </div>
+                      ))}
+                    </div>}
                   </div>
                 );})}
+                <button onClick={()=>addCustomCol("before")} className="btn-ghost" style={{fontSize:11,padding:"6px 12px",marginTop:6,borderColor:"rgba(167,139,250,.4)",color:"#a78bfa"}}>➕ เพิ่มคอลัมน์เอง</button>
               </div>
               <div>
                 <div style={{fontSize:12,color:"#f472b6",marginBottom:8,fontWeight:700}}>🔵 หลังกลางภาค</div>
-                {afterOrder.map((o,i)=>{const it:any=afterItems.find((x:any)=>x.key===o.key);if(!it)return null;return(
-                  <div key={o.key} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",marginBottom:4,
-                    background:o.visible?"rgba(244,114,182,.08)":"rgba(255,255,255,.03)",borderRadius:6,opacity:o.visible?1:.5}}>
-                    <input type="checkbox" checked={o.visible} onChange={()=>toggleVisible(setAfterOrder,o.key)} style={{accentColor:"#f472b6"}}/>
-                    <span style={{flex:1,fontSize:12,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.name}</span>
-                    <button onClick={()=>moveOrder(setAfterOrder,i,-1)} disabled={i===0} style={{background:"transparent",border:"none",color:"var(--muted2)",cursor:i===0?"default":"pointer",opacity:i===0?.3:1,fontSize:14,padding:"0 4px"}}>▲</button>
-                    <button onClick={()=>moveOrder(setAfterOrder,i,1)} disabled={i===afterOrder.length-1} style={{background:"transparent",border:"none",color:"var(--muted2)",cursor:i===afterOrder.length-1?"default":"pointer",opacity:i===afterOrder.length-1?.3:1,fontSize:14,padding:"0 4px"}}>▼</button>
+                {afterOrder.map((o,i)=>{const it:any=afterItems.find((x:any)=>x.key===o.key);if(!it)return null;
+                  const isCustom=it.isCustom;const custCol:any=isCustom?customCols.find(c=>c.key===o.key):null;
+                  return(
+                  <div key={o.key} style={{marginBottom:4}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",
+                      background:o.visible?"rgba(244,114,182,.08)":"rgba(255,255,255,.03)",borderRadius:6,opacity:o.visible?1:.5}}>
+                      <input type="checkbox" checked={o.visible} onChange={()=>toggleVisible(setAfterOrder,o.key)} style={{accentColor:"#f472b6"}}/>
+                      {isCustom?
+                        <input value={custCol?.name||""} onChange={e=>updateCustomCol(o.key,"name",e.target.value)}
+                          style={{flex:1,fontSize:12,background:"rgba(0,0,0,.2)",border:"1px solid rgba(244,114,182,.3)",borderRadius:4,color:"var(--text)",padding:"3px 6px"}}/>
+                        :<span style={{flex:1,fontSize:12,color:"var(--text)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{it.name}</span>}
+                      {isCustom&&<input type="number" value={custCol?.max||0} onChange={e=>updateCustomCol(o.key,"max",Number(e.target.value)||0)}
+                        style={{width:44,fontSize:12,background:"rgba(0,0,0,.2)",border:"1px solid rgba(244,114,182,.3)",borderRadius:4,color:"var(--text)",padding:"3px 4px",textAlign:"center"}}/>}
+                      <button onClick={()=>moveOrder(setAfterOrder,i,-1)} disabled={i===0} style={{background:"transparent",border:"none",color:"var(--muted2)",cursor:i===0?"default":"pointer",opacity:i===0?.3:1,fontSize:14,padding:"0 4px"}}>▲</button>
+                      <button onClick={()=>moveOrder(setAfterOrder,i,1)} disabled={i===afterOrder.length-1} style={{background:"transparent",border:"none",color:"var(--muted2)",cursor:i===afterOrder.length-1?"default":"pointer",opacity:i===afterOrder.length-1?.3:1,fontSize:14,padding:"0 4px"}}>▼</button>
+                      {isCustom&&<button onClick={()=>removeCustomCol(o.key)} style={{background:"transparent",border:"none",color:"var(--red)",cursor:"pointer",fontSize:13,padding:"0 4px"}}>🗑</button>}
+                    </div>
+                    {isCustom&&<div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:4,padding:"6px 8px 2px 20px"}}>
+                      {students.map((s:any)=>(
+                        <div key={s.id} style={{display:"flex",alignItems:"center",gap:4}}>
+                          <span style={{fontSize:10,color:"var(--muted2)",flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name.split(" ").slice(1).join(" ")}</span>
+                          <input type="number" value={custCol?.scores?.[s.id]??""} placeholder="—" onChange={e=>setCustomScore(o.key,s.id,e.target.value)}
+                            style={{width:40,fontSize:11,background:"rgba(0,0,0,.25)",border:"1px solid rgba(244,114,182,.25)",borderRadius:4,color:"#f472b6",padding:"2px 4px",textAlign:"center"}}/>
+                        </div>
+                      ))}
+                    </div>}
                   </div>
                 );})}
+                <button onClick={()=>addCustomCol("after")} className="btn-ghost" style={{fontSize:11,padding:"6px 12px",marginTop:6,borderColor:"rgba(244,114,182,.4)",color:"#f472b6"}}>➕ เพิ่มคอลัมน์เอง</button>
               </div>
             </div>
-            <div style={{fontSize:11,color:"var(--muted)",marginTop:10}}>💡 ติ๊กออกเพื่อซ่อนคอลัมน์นั้นจากรายงาน (ยอดรวม/เกรดยังคำนวณจากทุกรายการเหมือนเดิม ไม่กระทบคะแนนจริง) กด ▲▼ เพื่อสลับลำดับ</div>
+            <div style={{fontSize:11,color:"var(--muted)",marginTop:10}}>💡 ติ๊กออกเพื่อซ่อนคอลัมน์นั้นจากรายงาน (ยอดรวม/เกรดยังคำนวณจากทุกรายการเหมือนเดิม ไม่กระทบคะแนนจริง) กด ▲▼ เพื่อสลับลำดับ · คอลัมน์ที่เพิ่มเอง แก้ชื่อ/คะแนนเต็ม/กรอกคะแนนได้ตรงนี้เลย (คะแนนนี้ใช้เฉพาะรายงาน ไม่กระทบ XP ในระบบ)</div>
+            <button className="btn-ghost" onClick={exportXLSX} style={{fontSize:13,padding:"9px 20px",marginTop:12,marginLeft:10,borderColor:"rgba(94,200,126,.5)",color:"var(--green)"}}>📗 ดาวน์โหลดเป็น Excel / Google Sheets (.xlsx)</button>
+            <button className="btn-ghost" onClick={exportPPTX} style={{fontSize:13,padding:"9px 20px",marginTop:12,borderColor:"rgba(232,140,74,.5)",color:"var(--orange)"}}>📊 ดาวน์โหลดเป็น PowerPoint (แก้ไขได้)</button>
           </div>
 
           <div id="print-report-area" lang="th" style={{background:"#fff",color:"#000",padding:24,borderRadius:8,overflowX:"auto",fontFamily:"'TH Sarabun PSK',sans-serif",wordBreak:"normal",overflowWrap:"normal",lineBreak:"strict"}}>
@@ -3343,6 +3458,7 @@ function TeacherGrades({students,setStudents,assignments}){
                     {beforeShown.map((it:any)=><td key={it.key} style={tint(rptTd,rptC.before)}>{it.score(s)}</td>)}
                     <td style={tint({...rptTd,fontWeight:700},rptC.beforeTot)}>{rBefore(s)}</td>
                     <td style={tint(rptTd,rptC.mid)}>{s.midterm??"—"}</td>
+                    <td style={tint({...rptTd,fontWeight:700},rptC.midTot)}>{rBefore(s)+rMid(s)}</td>
                     {afterShown.map((it:any)=><td key={it.key} style={tint(rptTd,rptC.after)}>{it.score(s)}</td>)}
                     <td style={tint({...rptTd,fontWeight:700},rptC.afterTot)}>{rAfter(s)}</td>
                     <td style={tint(rptTd,rptC.final)}>{s.final??"—"}</td>
@@ -3582,13 +3698,395 @@ function TeacherAirdrop({students,setPendingAirdrop,setStudents,studentsLoadOk})
 // GOOGLE APPS SCRIPT API — แก้ไขแล้ว
 // ─────────────────────────────────────────────
 const GAS_URL = "https://script.google.com/macros/s/AKfycbwvO4vrGJ5GQJwoT6Fm0xKRlySQAcFRCIhsn53oP9Mfr5zXuzmaI3ShDeyFMyeqJz2JOQ/exec";
+// ─────────────────────────────────────────────
+// ระบบหลายเทอม — แต่ละเทอมมีข้อมูลครบชุดของตัวเอง (นักเรียน/งาน/ไฟล์) ไม่ปะปนกัน
+// ใช้ร่วมกันทุกห้อง (ต่างกันแค่ ROOM_ID / ROOM_LABEL)
+// ─────────────────────────────────────────────
+// ROOM_ID ต้องตรงกับ ROOM_ID ใน Apps Script ของห้องเดียวกัน — ถ้าไม่ตรง เว็บจะหยุดและเตือนทันที (กันวางโค้ดผิดห้อง)
+const ROOM_ID="m6";
+const ROOM_LABEL="ม.6";
+const TEACHER_PW="291241";
+// CUR_EPOCH = "รุ่น" ของการตั้งค่านักเรียนที่หน้าจอนี้โหลดมา — ทุกคำสั่งบันทึกของนักเรียนแนบไปด้วย
+// ถ้าครูเปลี่ยนเทอมที่นักเรียนเห็นไปแล้ว หน้าจอนักเรียนที่เปิดค้างไว้จะถูกปฏิเสธ ไม่สามารถเขียนข้อมูลผิดเทอมได้
+let CUR_EPOCH=0;
+// จำนวนคำสั่งบันทึกที่กำลังส่งอยู่ (ใช้รอให้บันทึกเสร็จก่อนสลับเทอม/ออกจากระบบ)
+let INFLIGHT=0;
+// SESSION.term = null → มุมมองนักเรียน (เทอมที่ครูกำหนดให้นักเรียนเห็น)
+// SESSION.term = "T1"/"T2"/... → ครูกำลังทำงานในเทอมนั้น (ทุกคำสั่งอ่าน/เขียนจะระบุเทอม + รหัสครู)
+const SESSION:any={term:null};
+const SETTINGS:any={termId:"T1",termLabel:"เทอม 1",subject:"",school:"",chapters:null};
+const CH_PALETTE=[
+  {color:"#4ecaae",bg:"rgba(78,202,174,.06)"},{color:"#e88c4a",bg:"rgba(232,140,74,.06)"},
+  {color:"#aa8ff0",bg:"rgba(170,143,240,.06)"},{color:"#f5cc70",bg:"rgba(245,204,112,.06)"},
+  {color:"#7de8d0",bg:"rgba(125,232,208,.06)"},{color:"#f0a0c0",bg:"rgba(240,160,192,.06)"},
+  {color:"#7b8fe0",bg:"rgba(123,143,224,.06)"},{color:"#c060e0",bg:"rgba(192,96,224,.06)"},
+];
+// รายการหน่วยตั้งต้นของเว็บ (ก่อนมีการแก้ใดๆ) — ใช้เป็นค่าตั้งต้นของเทอมที่ยังไม่เคยตั้งชื่อหน่วย
+const DEFAULT_CHAPTERS:any[]=(CHAPTERS as any[]).map((c:any)=>({...c}));
+// นำค่าของเทอม (วิชา/ชื่อเทอม/ชื่อหน่วย) มาใช้ — แก้รายการ CHAPTERS ในที่เดิม เพื่อให้ทุกหน้าที่ใช้ CHAPTERS เห็นชื่อใหม่ทันที
+function applyTermMeta(meta:any){
+  if(!meta||typeof meta!=="object")return;
+  SETTINGS.termId=meta.id||SETTINGS.termId;
+  SETTINGS.termLabel=meta.label||"เทอม 1";
+  SETTINGS.subject=meta.subject||"";
+  SETTINGS.school=meta.school||"";
+  SETTINGS.chapters=Array.isArray(meta.chapters)?meta.chapters:null;
+  let next:any[];
+  if(Array.isArray(meta.chapters)&&meta.chapters.length>0){
+    next=meta.chapters.map((c:any,i:number)=>{
+      const base:any=DEFAULT_CHAPTERS.find((x:any)=>x.id===c.id)||{};
+      const pal=CH_PALETTE[i%CH_PALETTE.length];
+      return{...base,id:c.id,label:c.label||base.label||`หน่วยที่ ${i+1}`,title:c.title,icon:c.icon||base.icon||"📘",color:c.color||base.color||pal.color,bg:c.bg||base.bg||pal.bg};
+    });
+  } else {
+    next=DEFAULT_CHAPTERS.map((c:any)=>({...c}));
+  }
+  (CHAPTERS as any[]).splice(0,(CHAPTERS as any[]).length,...next);
+}
+// ข้อมูลที่แนบไปกับทุกคำสั่งบันทึก: นักเรียน → epoch / ครู → ระบุเทอม + รหัสครู
+function sessionBody():any{
+  const b:any={epoch:CUR_EPOCH};
+  if(SESSION.term){b.term=SESSION.term;b.pw=TEACHER_PW;}
+  return b;
+}
+function sessionQuery():string{
+  return SESSION.term?("&term="+encodeURIComponent(SESSION.term)+"&pw="+encodeURIComponent(TEACHER_PW)):"";
+}
+async function trackFetch(url:string,opts?:any){
+  INFLIGHT++;
+  try{return await fetch(url,opts);}
+  finally{INFLIGHT--;}
+}
+// โหลดข้อมูลของเทอมที่ระบุ (ครูเท่านั้น) — ไม่แตะ SESSION จนกว่าผู้เรียกจะโหลดสำเร็จและตัดสินใจเอง
+async function gasLoadTerm(termId:string):Promise<any>{
+  try{
+    const r=await fetch(GAS_URL+"?action=getAll&term="+encodeURIComponent(termId)+"&pw="+encodeURIComponent(TEACHER_PW)+"&_t="+Date.now(),{cache:"no-store"});
+    return await r.json();
+  }catch(e){
+    console.error("gasLoadTerm error:",e);
+    return null;
+  }
+}
+// เรียกคำสั่งฝั่งครู (ต้องใช้รหัสครู) — ใช้ GET เพราะอ่านผลลัพธ์กลับมาได้ชัวร์ (POST แบบ no-cors อ่านผลไม่ได้)
+async function gasTeacher(action:string,params:any={},timeoutMs:number=60000):Promise<any>{
+  const q=new URLSearchParams({action,pw:TEACHER_PW,_t:String(Date.now())});
+  Object.keys(params).forEach(k=>{const v=params[k];if(v===undefined||v===null)return;q.set(k,typeof v==="string"?v:JSON.stringify(v));});
+  const url=GAS_URL+"?"+q.toString();
+  if(url.length>7000)return{error:"ข้อมูลที่ส่งยาวเกินไป (ชื่อหน่วยยาวหรือมากเกินไป) กรุณาย่อชื่อหน่วย"};
+  INFLIGHT++;
+  const ac=new AbortController();
+  const tm=setTimeout(()=>ac.abort(),timeoutMs);
+  try{
+    const r=await fetch(url,{cache:"no-store",signal:ac.signal});
+    return await r.json();
+  }catch(e){
+    return{error:ac.signal.aborted?"เซิร์ฟเวอร์ตอบช้ากว่าปกติ":"เชื่อมต่อเซิร์ฟเวอร์ไม่สำเร็จ",network:true,timeout:ac.signal.aborted};
+  }finally{clearTimeout(tm);INFLIGHT--;}
+}
+function downloadJsonFile(filename:string,obj:any){
+  const blob=new Blob([JSON.stringify(obj,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download=filename;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+}
+
+// ตัวแก้รายการหน่วย/บท
+function ChapterEditor({chs,setChs}:any){
+  function upd(i:number,patch:any){setChs((prev:any[])=>prev.map((c:any,k:number)=>k===i?{...c,...patch}:c));}
+  function add(){
+    setChs((prev:any[])=>{
+      if(prev.length>=10)return prev;
+      let n=1;while(prev.some((c:any)=>c.id==="CH"+n))n++;
+      return[...prev,{id:"CH"+n,label:`หน่วยที่ ${prev.length+1}`,icon:"📘",title:""}];
+    });
+  }
+  function del(i:number){
+    if(chs.length<=1){alert("ต้องมีอย่างน้อย 1 หน่วย");return;}
+    if(!window.confirm(`ลบ "${chs[i].title||chs[i].label}" ออกจากรายการ?\n(ไฟล์/งานที่เคยผูกกับหน่วยนี้จะถูกแสดงไปอยู่หน่วยแรกแทน)`))return;
+    setChs((prev:any[])=>prev.filter((_:any,k:number)=>k!==i));
+  }
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      {chs.map((c:any,i:number)=>(
+        <div key={c.id} style={{display:"grid",gridTemplateColumns:"46px 110px 1fr 36px",gap:8,alignItems:"center"}}>
+          <input className="input" value={c.icon} maxLength={4} onChange={e=>upd(i,{icon:e.target.value})} style={{textAlign:"center",padding:"8px 4px"}} title="ไอคอน"/>
+          <input className="input" value={c.label} maxLength={20} onChange={e=>upd(i,{label:e.target.value})} placeholder="หน่วยที่ 1" title="ป้ายนำหน้า เช่น หน่วยที่ 1 / บทที่ 5"/>
+          <input className="input" value={c.title} maxLength={100} onChange={e=>upd(i,{title:e.target.value})} placeholder="ชื่อหน่วย/บท"/>
+          <button className="btn-ghost" onClick={()=>del(i)} style={{padding:"6px 0",color:"var(--red)"}} title="ลบ">✕</button>
+        </div>
+      ))}
+      <div><button className="btn-ghost" onClick={add} disabled={chs.length>=10}>＋ เพิ่มหน่วย</button></div>
+    </div>
+  );
+}
+const compactChapters=(chs:any[])=>chs.map((c:any)=>({id:c.id,label:(c.label||"").trim(),icon:(c.icon||"📘").trim(),title:(c.title||"").trim()}));
+
+// ฟอร์มสร้างเทอมใหม่ — คัดลอกรายชื่อนักเรียนจากเทอมต้นทางแบบรีเซ็ต (XP/งาน/Airdrop/คะแนน เริ่มใหม่) โดยไม่แตะข้อมูลเทอมเดิมเลย
+function NewTermForm({terms,defaultFrom,onCreated}:any){
+  const [label,setLabel]=useState<string>(`เทอม ${terms.length+1}`);
+  const [subject,setSubject]=useState("");
+  const [from,setFrom]=useState<string>(defaultFrom||(terms[terms.length-1]||{}).id||"T1");
+  const [keepRes,setKeepRes]=useState(false);
+  const [toStudents,setToStudents]=useState(false);
+  const [busy,setBusy]=useState(false);
+  const [sec,setSec]=useState(0);
+  useEffect(()=>{if(!busy){setSec(0);return;}const iv=setInterval(()=>setSec(x=>x+1),1000);return()=>clearInterval(iv);},[busy]);
+  const [msg,setMsg]=useState<any>(null);
+  const lbl={fontSize:11,color:"var(--muted2)",marginBottom:4,display:"block"} as any;
+  async function create(){
+    const L=label.trim();
+    if(!L){setMsg({err:true,text:"กรุณาตั้งชื่อเทอมใหม่"});return;}
+    if(terms.some((t:any)=>t.label===L)){setMsg({err:true,text:"มีเทอมชื่อนี้อยู่แล้ว กรุณาใช้ชื่ออื่น"});return;}
+    const src=terms.find((t:any)=>t.id===from);
+    if(!window.confirm(`สร้างเทอมใหม่ "${L}"\n\n• คัดลอกรายชื่อนักเรียนจาก "${src?src.label:from}" แต่รีเซ็ต XP / งาน / Airdrop / คะแนนสอบ ให้เริ่มใหม่ทั้งหมด\n• ข้อมูลของ "${src?src.label:from}" ไม่ถูกแตะต้องเลย\n• ${toStudents?"นักเรียนจะเห็นเทอมใหม่ทันที":"นักเรียนยังเห็นเทอมเดิมต่อไป จนกว่าครูจะเลือกให้เห็นเทอมใหม่"}\n\nดำเนินการต่อหรือไม่?`))return;
+    setBusy(true);setMsg(null);
+    const params:any={label:L,from,keepResources:keepRes,switchStudents:toStudents};
+    if(subject.trim())params.subject=subject.trim();
+    const r=await gasTeacher("createTerm",params,180000);
+    setBusy(false);
+    if(r&&r.success){
+      setMsg({err:false,text:`✅ สร้าง "${r.term.label}" แล้ว (นักเรียน ${r.studentCount} คน)`});
+      onCreated(r);
+    } else if(r&&r.network){
+      // ไม่รู้ว่าฝั่งเซิร์ฟเวอร์ทำสำเร็จหรือยัง — ตรวจรายการเทอมซ้ำเป็นระยะ (ไม่ต้องกดอะไรเพิ่ม)
+      setMsg({err:false,text:"⏳ การเชื่อมต่อขาดช่วง กำลังตรวจสอบว่าเทอมถูกสร้างหรือยัง อย่ากดซ้ำ..."});
+      setBusy(true);
+      for(let i=0;i<9;i++){
+        await new Promise(res=>setTimeout(res,8000));
+        const x=await gasTeacher("listTerms",{},40000);
+        if(x&&Array.isArray(x.terms)){
+          const t=x.terms.find((q:any)=>q.label===L);
+          if(t){setBusy(false);setMsg({err:false,text:`✅ สร้าง "${t.label}" เรียบร้อยแล้ว (นักเรียน ${t.studentCount} คน)`});onCreated({success:true,term:t,terms:x.terms,studentTerm:x.studentTerm,studentCount:t.studentCount});return;}
+        }
+      }
+      setBusy(false);
+      setMsg({err:true,text:"รอนานกว่าปกติ — ไม่รู้ว่าสร้างสำเร็จหรือยัง อย่ากดซ้ำ รอ 1–2 นาทีแล้วรีเฟรชหน้านี้ (F5) เพื่อดูว่ามีเทอมใหม่ในรายการหรือไม่ — ถ้ากดสร้างซ้ำด้วยชื่อเดิม ระบบจะไม่สร้างซ้อน"});
+    } else {
+      setMsg({err:true,text:"❌ "+((r&&(r.message||r.error))||"สร้างเทอมไม่สำเร็จ")});
+    }
+  }
+  return(
+    <div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:10,marginBottom:12}}>
+        <div><label style={lbl}>ชื่อเทอมใหม่ (เช่น เทอม 2/2568)</label><input className="input" value={label} onChange={e=>setLabel(e.target.value)} maxLength={50}/></div>
+        <div><label style={lbl}>ชื่อวิชาใหม่ (เช่น ฟิสิกส์ 4)</label><input className="input" value={subject} onChange={e=>setSubject(e.target.value)} maxLength={100} placeholder="เว้นว่าง = ใช้ชื่อวิชาเดิม"/></div>
+        <div><label style={lbl}>คัดลอกรายชื่อนักเรียนจาก</label>
+          <select className="input" value={from} onChange={e=>setFrom(e.target.value)}>
+            {terms.map((t:any)=><option key={t.id} value={t.id}>{t.label}{t.subject?` · ${t.subject}`:""}</option>)}
+          </select>
+        </div>
+      </div>
+      <label style={{display:"flex",gap:8,alignItems:"center",fontSize:13,cursor:"pointer",marginBottom:6}}>
+        <input type="checkbox" checked={keepRes} onChange={e=>setKeepRes(e.target.checked)}/> คัดลอกไฟล์บทเรียนจากเทอมต้นทางมาด้วย (ถ้าไม่ติ๊ก เทอมใหม่จะไม่มีไฟล์)
+      </label>
+      <label style={{display:"flex",gap:8,alignItems:"center",fontSize:13,cursor:"pointer"}}>
+        <input type="checkbox" checked={toStudents} onChange={e=>setToStudents(e.target.checked)}/> ให้นักเรียนเห็นเทอมใหม่ทันที (ไม่แนะนำ ถ้ายังไม่ได้เตรียมงาน/ไฟล์ของเทอมใหม่ — เลือกทีหลังได้)
+      </label>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginTop:14,flexWrap:"wrap"}}>
+        <button className="btn btn-gold" onClick={create} disabled={busy}>{busy?`กำลังสร้างเทอม... ${sec} วินาที (อาจใช้ 30–60 วินาที อย่ากดซ้ำ)`:"➕ สร้างเทอมใหม่"}</button>
+        {msg&&<span style={{fontSize:13,color:msg.err?"var(--red)":"var(--green)"}}>{msg.text}</span>}
+      </div>
+    </div>
+  );
+}
+
+// หน้าแรกหลังครู login — เลือกว่าจะเข้าทำงานในเทอมไหน / ให้นักเรียนเห็นเทอมไหน / สร้างเทอมใหม่
+function TermGate({onEnter,onLogout,onStudentTerm,onTerms}:any){
+  const [info,setInfo]=useState<any>(null);
+  const [err,setErr]=useState("");
+  const [working,setWorking]=useState("");
+  const [notice,setNotice]=useState("");
+  async function load(){
+    setErr("");
+    const r=await gasTeacher("listTerms");
+    if(r&&Array.isArray(r.terms)){
+      if(r.roomId&&r.roomId!==ROOM_ID){setErr(`Apps Script ที่เชื่อมอยู่เป็นของห้อง ${r.roomId} ไม่ใช่ ${ROOM_LABEL} — หยุดการทำงานเพื่อความปลอดภัย (ตรวจ SHEET_ID / ROOM_ID ใน Apps Script)`);return;}
+      setInfo(r);onStudentTerm(r.studentTerm);onTerms(r.terms);
+    } else setErr((r&&(r.message||r.error))||"โหลดรายการเทอมไม่สำเร็จ");
+  }
+  useEffect(()=>{load();},[]);
+  async function makeVisible(t:any){
+    if(!window.confirm(`ให้นักเรียนเห็นข้อมูลของ "${t.label}${t.subject?` · ${t.subject}`:""}" ทั้งหมดหรือไม่?\n\n• นักเรียนจะเห็นเฉพาะข้อมูลของเทอมนี้ (เทอมอื่นนักเรียนมองไม่เห็น)\n• นักเรียนที่เปิดหน้าเว็บค้างอยู่จะถูกรีเฟรชอัตโนมัติภายในประมาณ 1 นาที\n• ข้อมูลของทุกเทอมยังอยู่ครบ ไม่มีอะไรถูกลบ`))return;
+    setWorking(t.id);
+    const r=await gasTeacher("setStudentTerm",{id:t.id});
+    setWorking("");
+    if(r&&r.success){await load();}
+    else alert("เปลี่ยนไม่สำเร็จ: "+((r&&(r.message||r.error))||"ไม่ทราบสาเหตุ"));
+  }
+  return(
+    <div style={{minHeight:"100vh",padding:"28px 16px",position:"relative"}}>
+      <div style={{maxWidth:820,margin:"0 auto",position:"relative",zIndex:1}} className="fade-up">
+        <div style={{textAlign:"center",marginBottom:22}}>
+          <div style={{fontSize:40}}>📚</div>
+          <div style={{fontSize:24,fontWeight:800,color:"#f0a0c0",marginTop:4}}>เลือกเทอมที่จะเข้าทำงาน</div>
+          <div style={{fontSize:13,color:"var(--muted2)",marginTop:6}}>ห้อง {ROOM_LABEL} · ข้อมูลแต่ละเทอมแยกจากกัน ไม่ปะปนกัน</div>
+        </div>
+        {err&&<div className="card" style={{borderColor:"rgba(232,96,96,.6)",color:"var(--red)",fontSize:14,marginBottom:14}}>❌ {err} <button className="btn-ghost" onClick={load} style={{marginLeft:8}}>ลองใหม่</button></div>}
+        {notice&&<div className="card" style={{borderColor:"rgba(94,200,126,.6)",color:"var(--green)",fontSize:14,marginBottom:14}}>{notice}</div>}
+        {!info&&!err&&<div className="card" style={{textAlign:"center",color:"var(--muted2)"}}>กำลังโหลดรายการเทอม...</div>}
+        {info&&(
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            {info.terms.map((t:any)=>{
+              const vis=info.studentTerm===t.id;
+              return(
+                <div key={t.id} className="card" style={{borderColor:vis?"rgba(94,200,126,.55)":undefined}}>
+                  <div style={{display:"flex",gap:12,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap"}}>
+                    <div style={{minWidth:0}}>
+                      <div style={{fontSize:18,fontWeight:700}}>{t.label}{t.subject?` · ${t.subject}`:""}</div>
+                      <div style={{fontSize:12,color:"var(--muted2)",marginTop:4}}>นักเรียน {t.studentCount>=0?t.studentCount:"?"} คน · งาน {t.assignmentCount>=0?t.assignmentCount:"?"} รายการ · ไฟล์ {t.resourceCount>=0?t.resourceCount:"?"} รายการ</div>
+                      <div style={{marginTop:6}}>
+                        {vis
+                          ?<span style={{fontSize:12,padding:"3px 10px",borderRadius:20,background:"rgba(94,200,126,.14)",border:"1px solid rgba(94,200,126,.5)",color:"var(--green)"}}>👩‍🎓 นักเรียนเห็นเทอมนี้อยู่</span>
+                          :<span style={{fontSize:12,padding:"3px 10px",borderRadius:20,background:"rgba(255,255,255,.05)",border:"1px solid var(--border)",color:"var(--muted2)"}}>🔒 นักเรียนมองไม่เห็น (เห็นเฉพาะครู)</span>}
+                      </div>
+                    </div>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                      <button className="btn btn-gold" onClick={()=>onEnter(t.id)} style={{padding:"10px 22px"}}>เข้าเทอมนี้ →</button>
+                      {!vis&&<button className="btn-ghost" disabled={working===t.id} onClick={()=>makeVisible(t)}>{working===t.id?"กำลังเปลี่ยน...":"👩‍🎓 ให้นักเรียนเห็นเทอมนี้"}</button>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            <div className="card">
+              <div style={{fontSize:15,fontWeight:700,marginBottom:10}}>➕ สร้างเทอมใหม่</div>
+              <NewTermForm key={info.terms.length} terms={info.terms} defaultFrom={info.studentTerm} onCreated={(r:any)=>{setNotice(`✅ สร้าง "${r.term.label}" เรียบร้อยแล้ว — กด "เข้าเทอมนี้" เพื่อเริ่มเตรียมงาน/ไฟล์ของเทอมใหม่`);load();}}/>
+            </div>
+          </div>
+        )}
+        <div style={{textAlign:"center",marginTop:18}}><button className="btn-outline" onClick={onLogout}>ออกจากระบบ</button></div>
+      </div>
+    </div>
+  );
+}
+
+// แถบบอกสถานะเทอม (เฉพาะครู) — เห็นตลอดว่า "กำลังแก้เทอมไหน" และ "นักเรียนเห็นเทอมไหน"
+function TermBar({termList,teacherTermId,studentTermId,onSwitch}:any){
+  const cur=termList.find((t:any)=>t.id===teacherTermId);
+  const stu=termList.find((t:any)=>t.id===studentTermId);
+  const same=teacherTermId===studentTermId;
+  return(
+    <div className="no-print" style={{margin:"0 20px 12px",padding:"9px 14px",borderRadius:8,display:"flex",gap:10,flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",fontSize:13,
+      background:same?"rgba(94,200,126,.10)":"rgba(232,188,85,.14)",border:`1px solid ${same?"rgba(94,200,126,.4)":"rgba(232,188,85,.6)"}`}}>
+    <div>📚 กำลังทำงานในเทอม: <b>{(cur&&cur.label)||SETTINGS.termLabel}</b>{cur&&cur.subject?` · ${cur.subject}`:""}
+      <span style={{margin:"0 8px",opacity:.5}}>|</span>
+      {same?<span style={{color:"var(--green)"}}>👩‍🎓 นักเรียนเห็นเทอมนี้อยู่</span>
+        :<span style={{color:"#f5cc70"}}>⚠️ นักเรียนกำลังเห็น <b>{stu?stu.label:studentTermId}</b> (ไม่ใช่เทอมนี้ — สิ่งที่แก้ตรงนี้นักเรียนยังไม่เห็น)</span>}
+    </div>
+    <button className="btn-ghost" onClick={onSwitch}>🔀 สลับเทอม</button>
+    </div>
+  );
+}
+
+function TeacherTerm({students,assignments,resources,studentsLoadOk,termList,teacherTermId,studentTermId,onStudentTerm,onTermsChanged,onSettingsChanged,onSwitch}:any){
+  const [subject,setSubject]=useState<string>(SETTINGS.subject||"");
+  const [termLabel,setTermLabel]=useState<string>(SETTINGS.termLabel||"");
+  const [school,setSchool]=useState<string>(SETTINGS.school||"");
+  const [chs,setChs]=useState<any[]>(()=>(CHAPTERS as any[]).map((c:any)=>({id:c.id,label:c.label,icon:c.icon,title:c.title})));
+  const [setMsgT,setSetMsgT]=useState<any>(null);
+  const [savingSet,setSavingSet]=useState(false);
+  const [working,setWorking]=useState("");
+  const lbl={fontSize:11,color:"var(--muted2)",marginBottom:4,display:"block"} as any;
+
+  async function saveSet(){
+    if(!studentsLoadOk){alert("⚠️ ยังโหลดข้อมูลจากระบบไม่สำเร็จ กรุณารีเฟรชหน้าเว็บก่อน");return;}
+    if(!termLabel.trim()){setSetMsgT({err:true,text:"กรุณาใส่ชื่อเทอม"});return;}
+    if(chs.some(c=>!c.title.trim())){setSetMsgT({err:true,text:"กรุณาใส่ชื่อให้ครบทุกหน่วย (หรือกด ✕ ลบหน่วยที่ไม่ใช้)"});return;}
+    setSavingSet(true);setSetMsgT(null);
+    const r=await gasTeacher("saveTermSettings",{term:teacherTermId,label:termLabel.trim(),subject:subject.trim(),school:school.trim(),chapters:compactChapters(chs)});
+    setSavingSet(false);
+    if(r&&r.success){
+      applyTermMeta(r.termMeta);
+      if(Array.isArray(r.terms))onTermsChanged(r.terms);
+      onSettingsChanged();
+      setSetMsgT({err:false,text:"✅ บันทึกแล้ว — ทุกหน้าใช้ชื่อใหม่ทันที"});
+    } else setSetMsgT({err:true,text:"❌ บันทึกไม่สำเร็จ: "+((r&&(r.message||r.error))||"ไม่ทราบสาเหตุ")});
+  }
+
+  async function makeVisible(t:any){
+    if(t.id===studentTermId)return;
+    if(!window.confirm(`ให้นักเรียนเห็นข้อมูลของ "${t.label}${t.subject?` · ${t.subject}`:""}" ทั้งหมดหรือไม่?\n\n• นักเรียนจะเห็นเฉพาะข้อมูลของเทอมนี้ (เทอมอื่นนักเรียนมองไม่เห็น)\n• นักเรียนที่เปิดหน้าเว็บค้างอยู่จะถูกรีเฟรชอัตโนมัติภายในประมาณ 1 นาที\n• ข้อมูลของทุกเทอมยังอยู่ครบ ไม่มีอะไรถูกลบ`))return;
+    setWorking(t.id);
+    const r=await gasTeacher("setStudentTerm",{id:t.id});
+    setWorking("");
+    if(r&&r.success){onStudentTerm(r.studentTerm);}
+    else alert("เปลี่ยนไม่สำเร็จ: "+((r&&(r.message||r.error))||"ไม่ทราบสาเหตุ"));
+  }
+
+  function downloadCurrentBackup(){
+    downloadJsonFile(`backup-${ROOM_ID}-${SETTINGS.termId}-${Date.now()}.json`,{backupAt:new Date().toISOString(),room:ROOM_ID,term:SETTINGS.termId,termLabel:SETTINGS.termLabel,subject:SETTINGS.subject,students,assignments,resources});
+  }
+
+  const cur=termList.find((t:any)=>t.id===teacherTermId);
+  return(
+    <div className="fade-up" style={{padding:20,maxWidth:1000,margin:"0 auto",display:"flex",flexDirection:"column",gap:18}}>
+      <div className="card card-gold">
+        <div className="mono" style={{fontSize:10,color:"var(--muted)",letterSpacing:3,marginBottom:6}}>เทอมที่กำลังทำงาน · ห้อง {ROOM_LABEL}</div>
+        <div style={{fontSize:20,fontWeight:700,color:"#f0a0c0"}}>{(cur&&cur.label)||SETTINGS.termLabel}{SETTINGS.subject?` · ${SETTINGS.subject}`:""}</div>
+        <div style={{fontSize:12,color:"var(--muted2)",marginTop:6}}>นักเรียน {students.length} คน · งาน {assignments.length} รายการ · ไฟล์ {resources.length} รายการ</div>
+        <div style={{marginTop:12}}><button className="btn btn-gold" onClick={onSwitch}>🔀 สลับไปเทอมอื่น / กลับหน้าเลือกเทอม</button></div>
+      </div>
+
+      <div className="card">
+        <div style={{fontSize:15,fontWeight:700,marginBottom:4}}>👩‍🎓 นักเรียนเห็นเทอมไหน</div>
+        <div style={{fontSize:12,color:"var(--muted2)",lineHeight:1.8,marginBottom:12}}>
+          นักเรียนจะเห็นข้อมูล <b>ทั้งหมด</b> ของเทอมที่เลือกเท่านั้น (XP / งาน / ไฟล์ / Airdrop / อันดับ) — เทอมอื่นนักเรียนมองไม่เห็นเลย<br/>
+          ถ้าต้องการ "ปิดเทอม 1" ไม่ให้นักเรียนเห็น ให้เลือกเทอม 2 ให้นักเรียนเห็น ข้อมูลเทอม 1 ยังอยู่ครบสำหรับครู
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {termList.map((t:any)=>{
+            const vis=t.id===studentTermId;
+            return(
+              <div key={t.id} style={{display:"flex",gap:10,alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",padding:"10px 14px",borderRadius:7,
+                background:vis?"rgba(94,200,126,.10)":"rgba(255,255,255,.04)",border:`1px solid ${vis?"rgba(94,200,126,.5)":"var(--border)"}`}}>
+                <div style={{fontSize:14,fontWeight:600}}>{t.label}{t.subject?` · ${t.subject}`:""}{t.id===teacherTermId?<span style={{fontSize:11,color:"var(--muted2)",fontWeight:400}}>  (เทอมที่ครูกำลังทำงาน)</span>:null}</div>
+                {vis?<span style={{fontSize:12,color:"var(--green)"}}>👩‍🎓 นักเรียนเห็นเทอมนี้อยู่</span>
+                  :<button className="btn-ghost" disabled={working===t.id} onClick={()=>makeVisible(t)}>{working===t.id?"กำลังเปลี่ยน...":"ให้นักเรียนเห็นเทอมนี้"}</button>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="card">
+        <div style={{fontSize:15,fontWeight:700,marginBottom:12}}>⚙️ ตั้งค่าเทอมนี้ (วิชา / ชื่อเทอม / ชื่อหน่วย)</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:10,marginBottom:14}}>
+          <div><label style={lbl}>ชื่อวิชา (เช่น ฟิสิกส์ 3)</label><input className="input" value={subject} onChange={e=>setSubject(e.target.value)} maxLength={100}/></div>
+          <div><label style={lbl}>ชื่อเทอม (เช่น เทอม 1/2568)</label><input className="input" value={termLabel} onChange={e=>setTermLabel(e.target.value)} maxLength={50}/></div>
+          <div><label style={lbl}>ชื่อโรงเรียน (ใช้เป็นค่าเริ่มต้นในใบคะแนน)</label><input className="input" value={school} onChange={e=>setSchool(e.target.value)} maxLength={100}/></div>
+        </div>
+        <label style={lbl}>รายการหน่วย/บท (ไอคอน · ป้ายนำหน้า · ชื่อ)</label>
+        <ChapterEditor chs={chs} setChs={setChs}/>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginTop:14,flexWrap:"wrap"}}>
+          <button className="btn btn-gold" onClick={saveSet} disabled={savingSet}>{savingSet?"กำลังบันทึก...":"💾 บันทึกการตั้งค่า"}</button>
+          {setMsgT&&<span style={{fontSize:13,color:setMsgT.err?"var(--red)":"var(--green)"}}>{setMsgT.text}</span>}
+        </div>
+      </div>
+
+      <div className="card">
+        <div style={{fontSize:15,fontWeight:700,marginBottom:6}}>➕ สร้างเทอมใหม่</div>
+        <div style={{fontSize:12,color:"var(--muted2)",lineHeight:1.8,marginBottom:12}}>
+          สร้างพื้นที่ข้อมูลใหม่ทั้งชุด: คัดลอกรายชื่อนักเรียน (ชื่อ / ห้อง / รหัสผ่าน / อวตาร์) แต่ XP, งาน, Airdrop, คะแนนสอบ <b>เริ่มใหม่ทั้งหมด</b> — ข้อมูลเทอมเดิมไม่ถูกแตะต้อง<br/>
+          ถ้าวิชาใหม่มีห้องเรียน/รายชื่อไม่เหมือนเดิม ให้เข้าเทอมใหม่แล้วแก้รายชื่อที่หน้า STUDENTS ได้ตามปกติ
+        </div>
+        <NewTermForm key={termList.length} terms={termList} defaultFrom={teacherTermId} onCreated={(r:any)=>{onTermsChanged(r.terms);if(r.studentTerm)onStudentTerm(r.studentTerm);}}/>
+      </div>
+
+      <div className="card">
+        <div style={{fontSize:15,fontWeight:700,marginBottom:6}}>💾 สำรองข้อมูลเทอมนี้</div>
+        <div style={{fontSize:12,color:"var(--muted2)",lineHeight:1.8,marginBottom:10}}>ดาวน์โหลดข้อมูลทั้งหมดของเทอมที่กำลังทำงานเก็บเป็นไฟล์ .json (เปิดดูด้วย Notepad หรือ Chrome — ไม่ต้องเปิดด้วย Acrobat) · ใบคะแนนทางการพิมพ์ได้ที่หน้า 📊 คะแนน</div>
+        <button className="btn-ghost" onClick={downloadCurrentBackup}>💾 ดาวน์โหลดข้อมูลสำรองของเทอมนี้</button>
+      </div>
+    </div>
+  );
+}
 
 async function gasGet(){
   try{
     // GET ไม่ต้องใช้ no-cors — GAS อนุญาต GET ปกติ
     // ใส่ timestamp กันแคช + cache:"no-store" — กันเบราว์เซอร์หยิบข้อมูลเก่าที่เคย cache ไว้มาโชว์แทนของจริง
     // (ปัญหา "รีเฟรชธรรมดาแล้วข้อมูลเก่ากลับมา" มักเกิดจากเบราว์เซอร์แคช GET request ไว้)
-    const r=await fetch(GAS_URL+"?action=getAll&_t="+Date.now(),{cache:"no-store"});
+    const r=await fetch(GAS_URL+"?action=getAll"+sessionQuery()+"&_t="+Date.now(),{cache:"no-store"});
     return await r.json();
   }catch(e){
     console.error("gasGet error:",e);
@@ -3599,11 +4097,11 @@ async function gasGet(){
 async function gasSave(action,data){
   try{
     // POST ต้องใช้ no-cors + Content-Type: text/plain
-    await fetch(GAS_URL,{
+    await trackFetch(GAS_URL,{
       method:"POST",
       mode:"no-cors",
       headers:{"Content-Type":"text/plain"},
-      body:JSON.stringify({action,data:JSON.stringify(data)})
+      body:JSON.stringify({action,data:JSON.stringify(data),...sessionBody()})
     });
   }catch(e){
     console.error("gasSave error:",e);
@@ -3613,11 +4111,11 @@ async function gasSave(action,data){
 // ส่งงาน/ลบงานแบบปลอดภัยจากการชนกัน — เซิร์ฟเวอร์อ่านข้อมูลสดเองแล้วแก้ทีละคน ไม่ต้องส่งทั้ง array
 async function gasSubmitAssignment(payload){
   try{
-    await fetch(GAS_URL,{
+    await trackFetch(GAS_URL,{
       method:"POST",
       mode:"no-cors",
       headers:{"Content-Type":"text/plain"},
-      body:JSON.stringify({action:"submitAssignment",...payload})
+      body:JSON.stringify({action:"submitAssignment",...payload,...sessionBody()})
     });
   }catch(e){
     console.error("gasSubmitAssignment error:",e);
@@ -3625,11 +4123,11 @@ async function gasSubmitAssignment(payload){
 }
 async function gasRemoveSubmission(payload){
   try{
-    await fetch(GAS_URL,{
+    await trackFetch(GAS_URL,{
       method:"POST",
       mode:"no-cors",
       headers:{"Content-Type":"text/plain"},
-      body:JSON.stringify({action:"removeSubmission",...payload})
+      body:JSON.stringify({action:"removeSubmission",...payload,...sessionBody()})
     });
   }catch(e){
     console.error("gasRemoveSubmission error:",e);
@@ -3638,11 +4136,11 @@ async function gasRemoveSubmission(payload){
 // ให้คะแนนแบบปลอดภัยจากการชนกัน — เซิร์ฟเวอร์อ่านข้อมูลสดเองแล้วแก้ทีละคน (มี Lock กันครูหลายคน/แท็บให้คะแนนพร้อมกัน)
 async function gasGradeSubmission(payload){
   try{
-    await fetch(GAS_URL,{
+    await trackFetch(GAS_URL,{
       method:"POST",
       mode:"no-cors",
       headers:{"Content-Type":"text/plain"},
-      body:JSON.stringify({action:"gradeSubmission",...payload})
+      body:JSON.stringify({action:"gradeSubmission",...payload,...sessionBody()})
     });
   }catch(e){
     console.error("gasGradeSubmission error:",e);
@@ -3678,6 +4176,9 @@ async function syncStudentsToSheet(students,assignments){
         submittedAt:sub?.submittedAt||""
       };
     });
+    // XP รายกิจกรรมที่ให้ผ่านหน้า "เพิ่ม XP" (คนละส่วนกับใบงานทางการด้านบน) — ส่งไปด้วยให้ขึ้นเป็นคอลัมน์แยกในชีตอ่านง่ายเหมือนกัน
+    const activityXp={};
+    (s.xpLog||[]).forEach(log=>{ activityXp[log.activity]=log.xp; });
     return{
       id:s.id,
       name:s.name,
@@ -3688,7 +4189,8 @@ async function syncStudentsToSheet(students,assignments){
       rank:getRank(getEffectiveXP(s,assignments)).label,
       midterm:s.midterm,
       final:s.final,
-      submissionLinks
+      submissionLinks,
+      activityXp
     };
   });
   await gasSave("saveStudentsDetailed",rows);
@@ -3722,6 +4224,17 @@ export default function App(){
   const saveTimerStudents=useRef<any>(null);
   const saveTimerAssignments=useRef<any>(null);
   const saveTimerResources=useRef<any>(null);
+  // roomMismatch = ชื่อห้องของ Apps Script ไม่ตรงกับเว็บนี้ (วางโค้ดผิดห้อง) → หยุดทุกอย่างทันที ไม่โหลด ไม่บันทึก
+  const [roomMismatch,setRoomMismatch]=useState<string|null>(null);
+  const [settingsVer,setSettingsVer]=useState(0);   // เปลี่ยนเมื่อแก้ชื่อวิชา/เทอม → ให้ป้ายด้านบนอัปเดต
+  const [termVer,setTermVer]=useState(0);           // เปลี่ยนเมื่อสลับเทอม → ทุกหน้าเริ่มใหม่หมด ไม่มีข้อมูลเทอมเก่าค้างในหน้าจอ
+  const [teacherTermId,setTeacherTermId]=useState<string|null>(null); // เทอมที่ครูกำลังทำงาน (null = ยังไม่ได้เลือก → แสดงหน้าเลือกเทอม)
+  const [studentTermId,setStudentTermId]=useState<string>("T1");       // เทอมที่นักเรียนเห็น
+  const [termList,setTermList]=useState<any[]>([]);
+  const [switching,setSwitching]=useState("");
+  // termLockRef = true ระหว่างสลับเทอม/อยู่หน้าเลือกเทอม: ปิด auto-save ชั่วคราว ป้องกันข้อมูลเทอมหนึ่งไปเขียนทับอีกเทอม
+  const termLockRef=useRef(false);
+  const authRef=useRef<any>(null);
   // ตั้งเป็น true เพื่อข้าม auto-save รอบถัดไป 1 ครั้ง — ใช้ตอนที่เพิ่งบันทึกผ่านช่องทางที่ปลอดภัยกว่าไปแล้ว (ส่ง/ลบงาน)
   // กันไม่ให้ auto-save ทั่วไป (ที่ยังทับทั้ง array) มาเขียนทับซ้ำด้วยข้อมูลที่อาจไม่ทันอัปเดต
   const skipAutoSaveRef=useRef(false);
@@ -3736,47 +4249,137 @@ export default function App(){
     }
   }
 
-  // โหลดข้อมูลตอนเริ่ม
+  // โหลดข้อมูลตอนเริ่ม — ถ้าดึง "นักเรียน" มาไม่สำเร็จ (ชิ้นที่สำคัญที่สุด) ลองใหม่อัตโนมัติสูงสุด 3 ครั้ง
+  // ก่อนจะยอมแพ้ ลดโอกาสที่จะเจอปัญหา "แก้ไขแล้วดูเหมือนสำเร็จ แต่จริงๆ ไม่ได้บันทึก" จากความสะดุดชั่วคราวของเน็ต/เซิร์ฟเวอร์
   useEffect(()=>{
-    gasGet().then(data=>{
-      if(data){
+    let cancelled=false;
+    async function loadWithRetry(attempt=1){
+      const data=await gasGet();
+      if(cancelled)return;
+      if(data&&!data.error){
+        // ป้องกันวางโค้ดผิดห้อง: ถ้าชื่อห้องที่ Apps Script ตอบกลับมาไม่ตรงกับเว็บนี้ ให้หยุดทันที (ไม่โหลด ไม่เซฟ)
+        if(data.roomId&&data.roomId!==ROOM_ID){setRoomMismatch(String(data.roomId));setLoaded(true);return;}
+        if(data.settings){
+          CUR_EPOCH=Number(data.settings.epoch)||0;
+          applyTermMeta(data.settings.termMeta);
+          if(data.settings.studentTerm)setStudentTermId(data.settings.studentTerm);
+          setSettingsVer(v=>v+1);
+        }
+        if(Array.isArray(data.assignments)){lastLoadedRef.current.assignments=data.assignments;setAssignments(data.assignments);setAssignmentsLoadOk(true);}
+        if(Array.isArray(data.resources)){lastLoadedRef.current.resources=data.resources;setResources(data.resources);setResourcesLoadOk(true);}
         // ยืนยันว่าดึงมาสำเร็จจริงด้วย Array.isArray (ไม่ใช่แค่เช็ค length>0) — array ว่างเปล่าก็ถือว่า "ดึงสำเร็จ" เหมือนกัน
-        // ต่างจากเดิมที่เช็คแค่ length>0 ซึ่งพลาดแยกไม่ออกระหว่าง "ดึงสำเร็จแต่ว่างจริง" กับ "ดึงไม่สำเร็จ"
-        if(Array.isArray(data.students)){setStudents(data.students);setStudentsLoadOk(true);}
-        if(Array.isArray(data.assignments)){setAssignments(data.assignments);setAssignmentsLoadOk(true);}
-        if(Array.isArray(data.resources)){setResources(data.resources);setResourcesLoadOk(true);}
-        setDataLoadOk(true); // เชื่อมต่อ Sheet โดยรวมสำเร็จ (ใช้โชว์/ซ่อนแบนเนอร์แดงเท่านั้น)
+        if(Array.isArray(data.students)){
+          lastLoadedRef.current.students=data.students;
+          setStudents(data.students);setStudentsLoadOk(true);
+          setDataLoadOk(true);setLoaded(true);
+          return;
+        }
       }
-      setLoaded(true);
-    });
+      // ดึง "นักเรียน" ไม่สำเร็จ — ลองใหม่ (สูงสุด 3 ครั้ง ห่างกัน 1.5 วินาที) ก่อนยอมแพ้
+      if(attempt<3){
+        setTimeout(()=>loadWithRetry(attempt+1),1500);
+      } else {
+        if(data&&!data.error)setDataLoadOk(true); // เชื่อมต่อโดยรวมสำเร็จ แต่ students ยังไม่ได้ — ปล่อยแบนเนอร์แดงไว้เตือน (studentsLoadOk ยังเป็น false)
+        setLoaded(true);
+      }
+    }
+    loadWithRetry();
+    return ()=>{cancelled=true;};
   },[]);
 
   // debounce save — รอ 1 วินาทีหลังเปลี่ยนค่า
   // ⚠️ เซฟกลับ Sheet ของแต่ละชุดข้อมูล ต้องรอให้ "ชุดนั้นๆ" ยืนยันว่าดึงมาสำเร็จแล้วเท่านั้น (ไม่ใช่แค่ dataLoadOk ภาพรวม) กันข้อมูลหาย
+  // ── ธงบอกว่า "กำลังมีการบันทึกค้างอยู่หรือรอคิวอยู่" — ใช้เตือนก่อนปิดหน้าเว็บ กันกรณีแก้เสร็จแล้วรีบปิด/สลับแท็บก่อนบันทึกเสร็จ (ภายใน 1 วิ) แล้วข้อมูลหายเงียบๆ
+  const pendingSaveRef=useRef(0); // นับจำนวนงานบันทึกที่ "ตั้งคิวไว้แต่ยังไม่เสร็จ" (เผื่อมีหลายชุดพร้อมกัน)
+  useEffect(()=>{
+    function handleBeforeUnload(e:BeforeUnloadEvent){
+      if(pendingSaveRef.current>0){
+        e.preventDefault();
+        e.returnValue="ยังมีการบันทึกข้อมูลค้างอยู่ — ถ้าปิดตอนนี้อาจมีข้อมูลบางส่วนไม่ถูกบันทึก";
+        return e.returnValue;
+      }
+    }
+    window.addEventListener("beforeunload",handleBeforeUnload);
+    return ()=>window.removeEventListener("beforeunload",handleBeforeUnload);
+  },[]);
+  // ตัวนับงานบันทึกที่ยังค้างอยู่ (ตั้งเวลารออยู่ + กำลังส่งอยู่) — ใช้เตือนก่อนปิดหน้าเว็บ และรอให้เสร็จก่อนสลับเทอม/ออกจากระบบ
+  const timerActiveRef=useRef<any>({});
+  const runningRef=useRef<any>({});
+  function recalcPending(){
+    let n=0;
+    ["students","assignments","resources"].forEach(k=>{ if(timerActiveRef.current[k])n++; n+=(runningRef.current[k]||0); });
+    pendingSaveRef.current=n;
+  }
+  // อาร์เรย์ที่เพิ่งโหลดมาจาก Sheet และยังไม่มีใครแก้ ไม่ต้องบันทึกกลับ (กันเครื่องที่เพิ่งเปิดหน้าเว็บ เขียนทับสิ่งที่คนอื่นเพิ่งแก้ด้วยข้อมูลที่เพิ่งอ่านมา)
+  const lastLoadedRef=useRef<any>({students:null,assignments:null,resources:null});
+  function scheduleSave(kind:string,timerRef:any,job:()=>Promise<void>){
+    clearTimeout(timerRef.current);
+    timerActiveRef.current[kind]=true;recalcPending();
+    timerRef.current=setTimeout(async()=>{
+      timerActiveRef.current[kind]=false;
+      runningRef.current[kind]=(runningRef.current[kind]||0)+1;recalcPending();
+      try{
+        if(termLockRef.current)return;
+        await job();
+      } finally {
+        runningRef.current[kind]=Math.max(0,(runningRef.current[kind]||1)-1);recalcPending();
+      }
+    },1000);
+  }
+  // รอให้การบันทึกที่ค้างอยู่เสร็จก่อน (ใช้ก่อนสลับเทอม/ออกจากระบบ) — คืน true ถ้าไม่มีอะไรค้างแล้ว
+  async function waitForSaves(){
+    for(let i=0;i<60;i++){ if(pendingSaveRef.current===0&&INFLIGHT===0)return true; await new Promise(r=>setTimeout(r,500)); }
+    return false;
+  }
+  // เมื่อกลับมาที่แท็บนี้ (หรือทุก ~45 วินาที) ตรวจว่าครูเปลี่ยนเทอมที่นักเรียนเห็นหรือยัง
+  //  - นักเรียน/หน้า login: ถ้าเปลี่ยนแล้ว โหลดหน้าใหม่ทันที (กันเอาข้อมูลเทอมเก่าที่ค้างหน้าจอมาใช้/บันทึกผิดเทอม)
+  //  - ครู: แค่อัปเดตป้ายว่านักเรียนเห็นเทอมไหน (ครูทำงานในเทอมที่ตัวเองเลือก ไม่ถูกเปลี่ยนตาม)
+  authRef.current=auth;
+  useEffect(()=>{
+    if(!loaded||roomMismatch)return;
+    let last=0;
+    async function check(){
+      if(Date.now()-last<10000)return;
+      last=Date.now();
+      try{
+        const r=await fetch(GAS_URL+"?action=getSettings&_t="+Date.now(),{cache:"no-store"});
+        const j=await r.json();
+        if(!j||!j.settings)return;
+        if(j.roomId&&j.roomId!==ROOM_ID)return;
+        if(authRef.current&&authRef.current.role==="teacher"){ if(j.settings.studentTerm)setStudentTermId(j.settings.studentTerm); return; }
+        if((Number(j.settings.epoch)||0)!==CUR_EPOCH){
+          if(authRef.current)alert("ครูเปลี่ยนเทอมที่แสดงให้นักเรียนแล้ว — กำลังโหลดหน้าใหม่ให้เป็นข้อมูลล่าสุด");
+          window.location.reload();
+        }
+      }catch(e){}
+    }
+    function onVis(){ if(!document.hidden)check(); }
+    window.addEventListener("focus",check);
+    document.addEventListener("visibilitychange",onVis);
+    const iv=setInterval(check,45000);
+    return()=>{window.removeEventListener("focus",check);document.removeEventListener("visibilitychange",onVis);clearInterval(iv);};
+  },[loaded,roomMismatch]);
+
   useEffect(()=>{
     if(!loaded||!studentsLoadOk)return;
-    clearTimeout(saveTimerStudents.current);
-    saveTimerStudents.current=setTimeout(async()=>{
+    if(students===lastLoadedRef.current.students)return;
+    scheduleSave("students",saveTimerStudents,async()=>{
       if(skipAutoSaveRef.current){skipAutoSaveRef.current=false;return;}
       await gasSave("saveStudents",students);
       await syncStudentsToSheet(students,assignments);
-    },1000);
+    });
   },[students,loaded,studentsLoadOk]);
 
   useEffect(()=>{
     if(!loaded||!assignmentsLoadOk)return;
-    clearTimeout(saveTimerAssignments.current);
-    saveTimerAssignments.current=setTimeout(()=>{
-      gasSave("saveAssignments",assignments);
-    },1000);
+    if(assignments===lastLoadedRef.current.assignments)return;
+    scheduleSave("assignments",saveTimerAssignments,async()=>{ await gasSave("saveAssignments",assignments); });
   },[assignments,loaded,assignmentsLoadOk]);
 
   useEffect(()=>{
     if(!loaded||!resourcesLoadOk)return;
-    clearTimeout(saveTimerResources.current);
-    saveTimerResources.current=setTimeout(()=>{
-      gasSave("saveResources",resources);
-    },1000);
+    if(resources===lastLoadedRef.current.resources)return;
+    scheduleSave("resources",saveTimerResources,async()=>{ await gasSave("saveResources",resources); });
   },[resources,loaded,resourcesLoadOk]);
 
   const [page,setPage]=useState("dashboard");
@@ -3788,6 +4391,7 @@ export default function App(){
   const [loginPending,setLoginPending]=useState<any>(null);
 
   function handleLogin(role,userId){
+    if(role==="teacher")termLockRef.current=true; // ครูต้องเลือกเทอมก่อน — ระหว่างนั้นไม่บันทึกอะไรทั้งสิ้น
     setAuth({role,userId});
     setPage(role==="teacher"?"overview":"dashboard");
     if(role==="student"){
@@ -3798,7 +4402,53 @@ export default function App(){
       }
     }
   }
-  function handleLogout(){setAuth(null);setLoginPending(null);}
+  function handleLogout(){
+    if(auth&&auth.role==="teacher"){
+      // ครูออกจากระบบ: รอให้บันทึกเสร็จ แล้วโหลดหน้าใหม่ เพื่อให้หน้าจอกลับไปเป็นข้อมูลมุมมองนักเรียนที่ถูกต้อง (ไม่มีข้อมูลเทอมของครูค้างอยู่)
+      setSwitching("กำลังบันทึกและออกจากระบบ...");
+      waitForSaves().then(()=>{window.location.reload();});
+      return;
+    }
+    setAuth(null);setLoginPending(null);
+  }
+  // ครูเลือกเทอม: โหลดข้อมูลของเทอมนั้นให้สำเร็จก่อน แล้วค่อยสลับ — ถ้าโหลดไม่สำเร็จ ไม่เปลี่ยนอะไรเลย
+  async function enterTerm(termId:string){
+    setSwitching("กำลังโหลดข้อมูลของเทอม...");
+    const ok=await waitForSaves();
+    if(!ok){setSwitching("");alert("ยังมีการบันทึกข้อมูลค้างอยู่ ลองใหม่อีกครั้งในอีกสักครู่");return;}
+    termLockRef.current=true;
+    const data=await gasLoadTerm(termId);
+    if(data&&data.roomId&&data.roomId!==ROOM_ID){setSwitching("");setRoomMismatch(String(data.roomId));return;}
+    if(!data||data.error||!Array.isArray(data.students)||!Array.isArray(data.assignments)||!Array.isArray(data.resources)){
+      setSwitching("");
+      alert("โหลดข้อมูลเทอมไม่สำเร็จ: "+((data&&(data.message||data.error))||"เชื่อมต่อไม่ได้")+"\n\nยังไม่มีอะไรถูกเปลี่ยน กรุณาลองใหม่");
+      return;
+    }
+    SESSION.term=termId;
+    applyTermMeta(data.settings&&data.settings.termMeta);
+    lastLoadedRef.current={students:data.students,assignments:data.assignments,resources:data.resources};
+    skipAutoSaveRef.current=false;
+    setStudents(data.students);setAssignments(data.assignments);setResources(data.resources);
+    setStudentsLoadOk(true);setAssignmentsLoadOk(true);setResourcesLoadOk(true);setDataLoadOk(true);setLoaded(true);
+    if(data.settings){
+      if(Array.isArray(data.settings.terms))setTermList(data.settings.terms);
+      if(data.settings.studentTerm)setStudentTermId(data.settings.studentTerm);
+    }
+    setTeacherTermId(termId);
+    setPage("overview");
+    setTermVer(v=>v+1);
+    termLockRef.current=false;
+    setSwitching("");
+  }
+  // กลับไปหน้าเลือกเทอม: รอให้บันทึกของเทอมปัจจุบันเสร็จก่อน แล้วล็อก auto-save ไว้จนกว่าจะเข้าเทอมใหม่
+  async function leaveTerm(){
+    setSwitching("กำลังบันทึกข้อมูลก่อนสลับเทอม...");
+    const ok=await waitForSaves();
+    setSwitching("");
+    if(!ok){alert("ยังมีการบันทึกข้อมูลค้างอยู่ ลองใหม่อีกครั้งในอีกสักครู่");return;}
+    termLockRef.current=true;
+    setTeacherTermId(null);
+  }
 
   useEffect(()=>{
     if(!pendingAirdrop)return;
@@ -3822,12 +4472,41 @@ export default function App(){
   const currentStudent=students.find(s=>s.id===userId);
   const navUser=role==="teacher"?{name:"ครูผู้สอน",avatar:"👩‍✈️",xp:9999}:currentStudent;
 
+  const switchOverlay=switching?(
+    <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(8,16,30,.9)",display:"flex",alignItems:"center",justifyContent:"center",color:"#f0a0c0",fontSize:18,fontWeight:700,textAlign:"center",padding:24}}>
+      <div>⏳ {switching}<div style={{fontSize:12,color:"var(--muted2)",marginTop:8,fontWeight:400}}>กรุณารอสักครู่ อย่าปิดหน้านี้</div></div>
+    </div>
+  ):null;
+  if(roomMismatch)return(
+    <>
+      <style>{G}</style>
+      <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+        <div className="card" style={{maxWidth:560,borderColor:"rgba(232,96,96,.7)",textAlign:"center"}}>
+          <div style={{fontSize:48}}>🛑</div>
+          <div style={{fontSize:20,fontWeight:700,color:"var(--red)",margin:"8px 0"}}>วางโค้ด Apps Script ผิดห้อง</div>
+          <div style={{fontSize:14,lineHeight:1.9}}>เว็บนี้คือห้อง <b>{ROOM_LABEL}</b> แต่ Apps Script ที่เชื่อมอยู่ตอบกลับมาว่าเป็นห้อง <b>{roomMismatch}</b><br/>
+          ระบบจึงหยุดทำงานทั้งหมด (ไม่โหลด ไม่บันทึก) เพื่อไม่ให้ข้อมูลของสองห้องปนกัน<br/>
+          วิธีแก้: เปิดโปรเจกต์ Apps Script ของห้อง {ROOM_LABEL} แล้วตรวจว่าบรรทัดแรกคือ SHEET_ID ของชีต {ROOM_LABEL} และมี <code>ROOM_ID = "{ROOM_ID}"</code> จากนั้น Deploy → Manage deployments → New version</div>
+        </div>
+      </div>
+    </>
+  );
   if(!auth)return(<><style>{G}</style><LoginScreen students={students} onLogin={handleLogin}/></>);
+  if(role==="teacher"&&!teacherTermId)return(
+    <>
+      <style>{G}</style>
+      <PhysicsBackground/>
+      <TermGate onEnter={enterTerm} onLogout={handleLogout}
+        onStudentTerm={(id:string)=>setStudentTermId(id)} onTerms={(t:any[])=>setTermList(t)}/>
+      {switchOverlay}
+    </>
+  );
 
   return(
     <>
       <style>{G}</style>
       <PhysicsBackground/>
+      {switchOverlay}
       {activePopup&&role==="student"&&<AirdropPopup airdrop={activePopup} onClaim={()=>{
         setStudents(prev=>prev.map(s=>s.id===userId?{...s,inventory:s.inventory.map((it:any)=>it.name===activePopup.name?{...it,seen:true}:it)}:s));
         setActivePopup(null);
@@ -3850,9 +4529,11 @@ export default function App(){
         </div>
       )}
       <div style={{position:"relative",zIndex:1,minHeight:"100vh"}}>
-        <TopNav user={navUser} role={role} page={page} setPage={setPage} onLogout={handleLogout} assignments={assignments}/>
-        <main>
+        <TopNav user={navUser} role={role} page={page} setPage={setPage} onLogout={handleLogout} assignments={assignments} studentsLoadOk={studentsLoadOk}/>
+        <main key={`${teacherTermId||"s"}-${termVer}`}>
           <PageHeader page={page} setPage={setPage}/>
+          {role==="student"&&SETTINGS.subject&&<div className="no-print" style={{margin:"0 20px 12px",padding:"8px 14px",borderRadius:8,background:"rgba(232,188,85,.08)",border:"1px solid rgba(232,188,85,.3)",fontSize:14,fontWeight:600}}>📘 วิชา {SETTINGS.subject} <span style={{fontWeight:400,color:"var(--muted2)"}}>· {SETTINGS.termLabel}</span></div>}
+          {role==="teacher"&&teacherTermId&&<TermBar termList={termList} teacherTermId={teacherTermId} studentTermId={studentTermId} onSwitch={leaveTerm}/>}
           {loaded&&!dataLoadOk&&(
             <div style={{margin:"0 20px 12px",padding:"12px 18px",background:"rgba(232,96,96,.14)",
               border:"1px solid rgba(232,96,96,.45)",borderRadius:8,color:"var(--red)",fontSize:13,
@@ -3872,9 +4553,10 @@ export default function App(){
           {role==="teacher"&&page==="t-assignments"&&<TeacherAssignments assignments={assignments} setAssignments={setAssignments} students={students} setStudents={setStudents} skipNextSave={skipNextSave} refreshFromSheet={refreshFromSheet}/>}
           {role==="teacher"&&page==="t-resources"  &&<TeacherResources resources={resources} setResources={setResources}/>}
           {role==="teacher"&&page==="t-scores"     &&<TeacherScores students={students} setStudents={setStudents} assignments={assignments} studentsLoadOk={studentsLoadOk}/>}
-          {role==="teacher"&&page==="t-exam"       &&<TeacherExamScores students={students} setStudents={setStudents}/>}
-          {role==="teacher"&&page==="t-grades"     &&<TeacherGrades students={students} setStudents={setStudents} assignments={assignments}/>}
+          {role==="teacher"&&page==="t-exam"       &&<TeacherExamScores students={students} setStudents={setStudents} studentsLoadOk={studentsLoadOk}/>}
+          {role==="teacher"&&page==="t-grades"     &&<TeacherGrades students={students} setStudents={setStudents} assignments={assignments} studentsLoadOk={studentsLoadOk}/>}
           {role==="teacher"&&page==="t-airdrop"    &&<TeacherAirdrop students={students} setPendingAirdrop={setPendingAirdrop} setStudents={setStudents} studentsLoadOk={studentsLoadOk}/>}
+          {role==="teacher"&&page==="t-term"       &&<TeacherTerm students={students} assignments={assignments} resources={resources} studentsLoadOk={studentsLoadOk} termList={termList} teacherTermId={teacherTermId} studentTermId={studentTermId} onStudentTerm={(id:string)=>setStudentTermId(id)} onTermsChanged={(t:any[])=>setTermList(t)} onSettingsChanged={()=>setSettingsVer(v=>v+1)} onSwitch={leaveTerm}/>}
           {role==="teacher"&&page==="ranking"      &&<RankingPage students={students} myId={undefined} isTeacher={true} assignments={assignments}/>}
         </main>
       </div>
